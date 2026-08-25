@@ -478,8 +478,8 @@ const SUBMENU_MAP = {
                 view: 'propria',
                 href: 'roteirizacao.html#propria',
                 children: [
-                    { label: 'Frota Própria', view: 'propria', href: 'roteirizacao.html#propria' },
-                    { label: 'Terceiros', view: 'terceiros', href: 'roteirizacao.html#terceiros' },
+                    { label: 'Manifesto', view: 'propria', href: 'roteirizacao.html#propria' },
+                    { label: 'Painel de entrega', view: 'painel-entrega', href: 'roteirizacao.html#painel-entrega' },
                 ],
             },
         ],
@@ -501,8 +501,8 @@ const SUBMENU_MAP = {
                 view: 'propria',
                 href: 'roteirizacao.html#propria',
                 children: [
-                    { label: 'Frota Própria', view: 'propria', href: 'roteirizacao.html#propria' },
-                    { label: 'Terceiros', view: 'terceiros', href: 'roteirizacao.html#terceiros' },
+                    { label: 'Manifesto', view: 'propria', href: 'roteirizacao.html#propria' },
+                    { label: 'Painel de entrega', view: 'painel-entrega', href: 'roteirizacao.html#painel-entrega' },
                 ],
             },
         ],
@@ -738,7 +738,7 @@ function initSubmenuBar(sidebarEl) {
     const currentPage = getCurrentPageName();
     let selectedTab = (window.location.hash || '').replace('#', '');
     if (currentPage === 'roteirizacao.html' && !selectedTab) {
-        selectedTab = 'propria';
+        selectedTab = 'painel-entrega';
     }
     const paintCurrent = () => renderSubmenuItems(submenu, currentPage, {
         markFirstActive: true,

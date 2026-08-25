@@ -1,5 +1,5 @@
 // frontend/js/modules/avaliacoes.js
-import '../api/api.js?v=15';
+import '../api/api.js?v=17';
 
 document.addEventListener('DOMContentLoaded', () => {
     loadAllEvaluations();

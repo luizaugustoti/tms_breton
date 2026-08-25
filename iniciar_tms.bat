@@ -7,7 +7,7 @@ chcp 65001 >nul
 :: Comandos: start | stop | restart | status
 :: ============================================================
 
-set "BACKEND=C:\Breton_TMS\backend"
+set "BACKEND=%~dp0backend"
 set "VENV=%BACKEND%\.venv\Scripts\python.exe"
 set "PORTA=8002"
 set "URL=http://127.0.0.1:%PORTA%/"

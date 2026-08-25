@@ -5,7 +5,7 @@
 // Assinatura digital (canvas) + upload de foto + sync com API
 // ─────────────────────────────────────────────────────────────
 
-import { api, authService, authStorage } from '../api/api.js?v=15';
+import { api, authService, authStorage } from '../api/api.js?v=17';
 import { checkAuth } from '../utils/auth-guard.js?v=2';
 
 // ─────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { api, authService, getApiBaseUrl } from '../api/api.js?v=15';
+import { api, authService, getApiBaseUrl } from '../api/api.js?v=17';
 import { checkAuth } from '../utils/auth-guard.js';
 import { showToast } from '../utils/modal.js';
 

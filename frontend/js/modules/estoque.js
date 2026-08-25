@@ -4,7 +4,7 @@
 // KPIs · Tabela dinâmica · Entrada/Baixa via modal · Exportação CSV
 // ─────────────────────────────────────────────────────────────
 
-import { api, authService } from '../api/api.js?v=15';
+import { api, authService } from '../api/api.js?v=17';
 import { checkAuth } from '../utils/auth-guard.js';
 import { openModal, showToast } from '../utils/modal.js';
 

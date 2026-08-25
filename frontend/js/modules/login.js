@@ -1,4 +1,4 @@
-import { api, authStorage, candidateApiBases, setApiBaseUrl } from '../api/api.js?v=16';
+import { api, authStorage, candidateApiBases, setApiBaseUrl } from '../api/api.js?v=17';
 
 document.addEventListener('DOMContentLoaded', () => {
     const redirectByRole = (user) => {

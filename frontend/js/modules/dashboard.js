@@ -1,5 +1,5 @@
 // frontend/js/modules/dashboard.js
-import { indicadoresService, authService, authStorage } from '../api/api.js?v=15';
+import { indicadoresService, authService, authStorage } from '../api/api.js?v=17';
 
 let pollTimer = null;
 

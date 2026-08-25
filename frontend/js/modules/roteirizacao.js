@@ -4,7 +4,7 @@
 // Colunas: Backlog | [Veículos Dinâmicos com Motorista e Equipe Editáveis] | Concluído
 // ─────────────────────────────────────────────────────────────
 
-import { api, authService } from '../api/api.js?v=15';
+import { api, authService } from '../api/api.js?v=17';
 import { checkAuth } from '../utils/auth-guard.js';
 import { showToast } from '../utils/modal.js';
 
@@ -20,9 +20,61 @@ const state = {
     pedidosLivres: [],
     formEntregas: [],
     formColetas: [],
+    manifestoEditandoId: null,
 };
 
+const VIEW_PROPRIA = 'propria';
+const VIEW_PAINEL_ENTREGA = 'painel-entrega';
+
 const posicaoAnterior = new Map();
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function rotaPorId(id) {
+    return (state.rotas || []).find((rota) => String(rota.id) === String(id));
+}
+
+function normalizarViewManifesto(viewName) {
+    const view = String(viewName || '').replace('#', '');
+    if (view === 'terceiros' || view === VIEW_PAINEL_ENTREGA) {
+        return VIEW_PAINEL_ENTREGA;
+    }
+    return VIEW_PROPRIA;
+}
+
+function iconeManifesto(tipo) {
+    if (tipo === 'ver') {
+        return `
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5c-5.5 0-9.8 4.1-11.5 7 1.7 2.9 6 7 11.5 7s9.8-4.1 11.5-7C21.8 9.1 17.5 5 12 5Zm0 11.5A4.5 4.5 0 1 1 12 7a4.5 4.5 0 0 1 0 9.5Zm0-2.5A2 2 0 1 0 12 10a2 2 0 0 0 0 4Z" />
+            </svg>`;
+    }
+    if (tipo === 'editar') {
+        return `
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25Zm2.92 2.33H5v-.92l8.88-8.88.92.92-8.88 8.88ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z" />
+            </svg>`;
+    }
+    return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 3h6l1 2h5v2h-1.1l-1.1 12.2A2 2 0 0 1 16.82 21H7.18a2 2 0 0 1-1.98-1.8L4.1 7H3V5h5l1-2Zm1.3 4h2.4l-.2 10h-2l-.2-10Zm4.4 0h-2.4l.2 10h2l.2-10ZM7.2 7l1 11h7.6l1-11H7.2Z" />
+        </svg>`;
+}
+
+function manifestoActionButton(tipo, id, label) {
+    const classes = ['mf-icon-btn', `mf-icon-btn--${tipo}`].join(' ');
+    return `
+        <button type="button" class="${classes}" data-manifesto-acao="${tipo}" data-id="${id}" title="${label}" aria-label="${label}">
+            ${iconeManifesto(tipo)}
+            <span class="mf-sr-only">${label}</span>
+        </button>`;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!checkAuth()) return;
@@ -42,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('hashchange', () => {
         aplicarView((window.location.hash || '').replace('#', ''));
     });
-    aplicarView((window.location.hash || '').replace('#', '') || 'propria', { skipReload: true });
+    aplicarView((window.location.hash || '').replace('#', '') || VIEW_PAINEL_ENTREGA, { skipReload: true });
     carregarDados();
 });
 
@@ -51,19 +103,19 @@ function tipoFrotaVeiculo(veiculo) {
 }
 
 function aplicarView(viewName, options = {}) {
-    const view = viewName === 'terceiros' ? 'terceiros' : 'propria';
+    const view = normalizarViewManifesto(viewName);
     state.view = view;
-    document.getElementById('view-propria')?.classList.toggle('mf-hidden', view !== 'propria');
-    document.getElementById('view-terceiros')?.classList.toggle('mf-hidden', view !== 'terceiros');
+    document.getElementById('view-propria')?.classList.toggle('mf-hidden', view !== VIEW_PROPRIA);
+    document.getElementById('view-terceiros')?.classList.toggle('mf-hidden', view !== VIEW_PAINEL_ENTREGA);
     const main = document.getElementById('manifestarMain');
     if (main) {
-        main.style.overflow = view === 'propria' ? 'auto' : 'hidden';
+        main.style.overflow = view === VIEW_PROPRIA ? 'auto' : 'hidden';
     }
     if (window.location.hash.replace('#', '') !== view) {
         history.replaceState(null, '', `#${view}`);
     }
     if (options.skipReload) return;
-    if (view === 'propria') {
+    if (view === VIEW_PROPRIA) {
         renderManifestos();
     } else if (state.veiculos.length) {
         construirBoard();
@@ -75,7 +127,7 @@ function veiculosDaView() {
     return state.veiculos.filter((veiculo) => {
         const tipo = tipoFrotaVeiculo(veiculo);
         const disponivel = !veiculo.status_operacional || /dispon/i.test(veiculo.status_operacional);
-        if (state.view === 'terceiros') return tipo === 'TERCEIRO' && disponivel;
+        if (state.view === VIEW_PAINEL_ENTREGA) return tipo === 'TERCEIRO' && disponivel;
         return tipo === 'PROPRIA';
     });
 }
@@ -204,7 +256,7 @@ function construirBoard() {
         empty.style.minWidth = '320px';
         empty.innerHTML = `
             <div class="col-header">
-                <div class="col-title">${state.view === 'terceiros' ? 'Terceiros' : 'Frota Própria'}</div>
+                <div class="col-title">${state.view === VIEW_PAINEL_ENTREGA ? 'Painel de entrega' : 'Frota Própria'}</div>
             </div>
             <div style="padding:18px;color:#7A6055;font-size:0.85rem;line-height:1.5;">
                 Nenhum veículo cadastrado nesta frota.<br>
@@ -857,7 +909,13 @@ function renderManifestos() {
             <tr data-id="${rota.id}">
                 <td><input type="checkbox" class="mf-check" data-id="${rota.id}"></td>
                 <td>${rota.id || '—'}</td>
-                <td>🖨</td>
+                <td>
+                    <div class="mf-actions-inline">
+                        ${manifestoActionButton('ver', rota.id, 'Visualizar manifesto')}
+                        ${manifestoActionButton('editar', rota.id, 'Editar manifesto')}
+                        ${manifestoActionButton('excluir', rota.id, 'Excluir manifesto')}
+                    </div>
+                </td>
                 <td>HOLDING PACHECO</td>
                 <td>${formatarDataBR(rota.data_rota)}</td>
                 <td></td>
@@ -890,6 +948,21 @@ function renderManifestos() {
         });
         tr.querySelector('.mf-check')?.addEventListener('change', (event) => {
             tr.classList.toggle('is-selected', event.target.checked);
+        });
+    });
+
+    tbody.querySelectorAll('[data-manifesto-acao]').forEach((btn) => {
+        btn.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            const rota = rotaPorId(btn.dataset.id);
+            if (!rota) return;
+            if (btn.dataset.manifestoAcao === 'ver') {
+                abrirVisualizarManifesto(rota);
+            } else if (btn.dataset.manifestoAcao === 'editar') {
+                await abrirEditarManifesto(rota);
+            } else if (btn.dataset.manifestoAcao === 'excluir') {
+                await excluirManifesto(rota);
+            }
         });
     });
 }
@@ -944,7 +1017,19 @@ function mostrarFormManifesto(aberto) {
     document.getElementById('mfLista')?.classList.toggle('mf-hidden', aberto);
     document.getElementById('mfForm')?.classList.toggle('mf-hidden', !aberto);
     const title = document.getElementById('pageTitle');
-    if (title) title.textContent = aberto ? 'MANIFESTO DE CARGA > Motorista' : '189 - Manifestos > Motorista / Rota';
+    const btnSalvar = document.getElementById('btnSalvarManifesto');
+    if (title) {
+        if (!aberto) {
+            title.textContent = '189 - Manifestos > Motorista / Rota';
+        } else if (state.manifestoEditandoId) {
+            title.textContent = 'EDITAR MANIFESTO > Motorista / Rota';
+        } else {
+            title.textContent = 'MANIFESTO DE CARGA > Motorista';
+        }
+    }
+    if (btnSalvar) {
+        btnSalvar.textContent = state.manifestoEditandoId ? 'Salvar alterações' : 'Salvar manifesto';
+    }
 }
 
 function nomeFuncionario(func) {
@@ -973,9 +1058,10 @@ function veiculosCadastro(tipoFrota = '') {
     });
 }
 
-function idsPedidosJaManifestados() {
+function idsPedidosJaManifestados(excluirRotaId = null) {
     const ids = new Set();
     (state.rotas || []).forEach((rota) => {
+        if (excluirRotaId !== null && String(rota.id) === String(excluirRotaId)) return;
         const temVeiculo = Boolean(rota.veiculo || rota.veiculo_id || rota.veiculo_placa);
         if (!temVeiculo) return;
         (rota.paradas || []).forEach((p) => {
@@ -989,7 +1075,7 @@ function idsPedidosJaManifestados() {
 function emissoesDisponiveis(termo = '') {
     const t = String(termo || '').trim().toLowerCase();
     const usados = new Set([
-        ...idsPedidosJaManifestados(),
+        ...idsPedidosJaManifestados(state.manifestoEditandoId),
         ...state.formEntregas.map((p) => String(p.id)),
         ...state.formColetas.map((p) => String(p.id)),
     ]);
@@ -1058,6 +1144,7 @@ function preencherSelectEmissoes(selectId, filtroId) {
 }
 
 async function abrirIncluirManifesto() {
+    state.manifestoEditandoId = null;
     state.formEntregas = [];
     state.formColetas = [];
     document.getElementById('incKmIni').value = '0';
@@ -1097,7 +1184,184 @@ async function abrirIncluirManifesto() {
 }
 
 function fecharFormManifesto() {
+    state.manifestoEditandoId = null;
+    state.formEntregas = [];
+    state.formColetas = [];
     mostrarFormManifesto(false);
+}
+
+function aplicarObservacoesNoFormulario(observacoes) {
+    const texto = String(observacoes || '');
+    const unidade = texto.match(/Unidade\s+([^;]+)/i);
+    const km = texto.match(/KM\s+(\d+)\s*-\s*(\d+)/i);
+    if (unidade && document.getElementById('incUnidade')) {
+        document.getElementById('incUnidade').value = unidade[1].trim();
+    }
+    if (km) {
+        document.getElementById('incKmIni').value = km[1];
+        document.getElementById('incKmFim').value = km[2];
+    }
+}
+
+function normalizarPedidoManifesto(pedido) {
+    return {
+        id: pedido.id,
+        numero: pedido.numero_nota || pedido.pedido_web || pedido.id,
+        emissao: formatarDataBR(pedido.criado_em || hojeISO()),
+        destinatario: pedido.cliente || pedido.destinatario?.nome || '—',
+        remetente: pedido.loja || pedido.emitente?.nome || '—',
+        cidade: pedido.cidade || pedido.destinatario?.cidade || '—',
+        volumes: Number(pedido.volume_total || pedido.volumes || 0) || 0,
+        peso: Number(pedido.peso_total || 0) || 0,
+        valor: Number(pedido.valor_total || 0) || 0,
+        tipoOperacao: String(pedido.tipo_operacao || '').toUpperCase(),
+    };
+}
+
+async function abrirEditarManifesto(rota) {
+    const rotaAtual = typeof rota === 'object' && rota ? rota : rotaPorId(rota);
+    if (!rotaAtual) {
+        showToast('Manifesto não encontrado.', 'error');
+        return;
+    }
+
+    state.manifestoEditandoId = rotaAtual.id;
+    state.formEntregas = [];
+    state.formColetas = [];
+
+    if (!state.funcionarios.length) {
+        const res = await api.request('/cadastros/funcionarios/', 'GET');
+        state.funcionarios = Array.isArray(res) ? res : (res.results || []);
+    }
+    if (!state.veiculos.length) {
+        const res = await api.request('/cadastros/veiculos/', 'GET');
+        state.veiculos = Array.isArray(res) ? res : (res.results || []);
+    }
+    if (!state.pedidosLivres.length) {
+        const res = await api.request('/pedidos/', 'GET');
+        state.pedidosLivres = Array.isArray(res) ? res : (res.results || []);
+    }
+
+    document.getElementById('incSaidaData').value = String(rotaAtual.data_rota || hojeISO());
+    document.getElementById('incChegadaData').value = String(rotaAtual.data_rota || hojeISO());
+    document.getElementById('incSaidaHora').value = '';
+    document.getElementById('incChegadaHora').value = '';
+    document.getElementById('incBuscaEntrega').value = '';
+    document.getElementById('incBuscaColeta').value = '';
+    document.getElementById('incKmIni').value = '0';
+    document.getElementById('incKmFim').value = '0';
+    aplicarObservacoesNoFormulario(rotaAtual.observacoes);
+
+    const paradasOrdenadas = [...(rotaAtual.paradas || [])]
+        .filter((parada) => parada && parada.pedido)
+        .sort((a, b) => Number(a.sequencia || 0) - Number(b.sequencia || 0));
+    paradasOrdenadas.forEach((parada) => {
+        const pedidoForm = normalizarPedidoManifesto(parada.pedido);
+        if (pedidoForm.tipoOperacao.includes('COLETA')) {
+            state.formColetas.push(pedidoForm);
+        } else {
+            state.formEntregas.push(pedidoForm);
+        }
+    });
+
+    preencherSelectsForm();
+    const motoristaEdit = state.funcionarios.find((f) => String(f.usuario_id || f.id) === String(rotaAtual.motorista || rotaAtual.motorista_id || ''));
+    const ajudanteEdit = state.funcionarios.find((f) => String(f.usuario_id || f.id) === String(rotaAtual.ajudante || rotaAtual.ajudante_id || ''));
+    const veiculoEdit = state.veiculos.find((v) => String(v.id) === String(rotaAtual.veiculo || rotaAtual.veiculo_id || ''));
+    if (document.getElementById('incVeiculo')) document.getElementById('incVeiculo').value = veiculoEdit ? String(veiculoEdit.id) : String(rotaAtual.veiculo || rotaAtual.veiculo_id || '');
+    if (document.getElementById('incMotorista')) document.getElementById('incMotorista').value = motoristaEdit ? String(motoristaEdit.id) : '';
+    if (document.getElementById('incAjudantes')) document.getElementById('incAjudantes').value = ajudanteEdit ? String(ajudanteEdit.id) : '';
+    renderFormTabelas();
+    mostrarFormManifesto(true);
+}
+
+function fecharModalManifesto() {
+    document.getElementById('modalManifestoDetalhe')?.remove();
+}
+
+function abrirVisualizarManifesto(rota) {
+    fecharModalManifesto();
+    const paradas = [...(rota.paradas || [])]
+        .filter((parada) => parada && parada.pedido)
+        .sort((a, b) => Number(a.sequencia || 0) - Number(b.sequencia || 0));
+    const modal = document.createElement('div');
+    modal.id = 'modalManifestoDetalhe';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    modal.innerHTML = `
+        <div style="background:#fff;max-width:980px;width:100%;max-height:90vh;overflow:auto;border-radius:8px;">
+            <div style="padding:14px 16px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;">
+                <strong>Manifesto ${escapeHtml(rota.codigo || rota.id || '')}</strong>
+                <button type="button" class="mf-btn mf-btn--ghost" id="btnFecharDetalheManifesto">Fechar</button>
+            </div>
+            <div style="padding:16px;display:grid;gap:14px;">
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:12px;">
+                    <div><strong>Data:</strong> ${formatarDataBR(rota.data_rota)}</div>
+                    <div><strong>Motorista:</strong> ${escapeHtml(motoristaDaRota(rota) || '—')}</div>
+                    <div><strong>Veículo:</strong> ${escapeHtml(rota.veiculo_placa || veiculoDaRota(rota)?.placa || '—')}</div>
+                </div>
+                <table class="mf-table" style="min-width:0;">
+                    <thead>
+                        <tr>
+                            <th>Seq.</th>
+                            <th>Pedido</th>
+                            <th>Cliente</th>
+                            <th>Cidade</th>
+                            <th>Tipo</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${paradas.map((parada) => `
+                            <tr>
+                                <td>${parada.sequencia}</td>
+                                <td>${escapeHtml(parada.pedido?.numero_nota || parada.pedido?.pedido_web || parada.pedido?.id || '—')}</td>
+                                <td>${escapeHtml(parada.pedido?.cliente || '—')}</td>
+                                <td>${escapeHtml(parada.pedido?.cidade || '—')}</td>
+                                <td>${escapeHtml(String(parada.pedido?.tipo_operacao || 'ENTREGA').toUpperCase())}</td>
+                                <td>${escapeHtml(parada.status || 'PENDENTE')}</td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+                <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+                    <button type="button" class="mf-btn mf-btn--ghost" id="btnEditarDetalheManifesto">Editar</button>
+                    <button type="button" class="mf-btn mf-btn--ghost" id="btnExcluirDetalheManifesto">Excluir</button>
+                </div>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+    document.getElementById('btnFecharDetalheManifesto')?.addEventListener('click', fecharModalManifesto);
+    document.getElementById('btnEditarDetalheManifesto')?.addEventListener('click', async () => {
+        fecharModalManifesto();
+        await abrirEditarManifesto(rota);
+    });
+    document.getElementById('btnExcluirDetalheManifesto')?.addEventListener('click', async () => {
+        await excluirManifesto(rota);
+    });
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) fecharModalManifesto();
+    });
+}
+
+async function excluirManifesto(rota) {
+    const rotaAtual = typeof rota === 'object' && rota ? rota : rotaPorId(rota);
+    if (!rotaAtual) {
+        showToast('Manifesto não encontrado.', 'error');
+        return;
+    }
+    if (!confirm(`Deseja realmente excluir o manifesto ${rotaAtual.codigo || rotaAtual.id}?`)) {
+        return;
+    }
+    try {
+        await api.request(`/roteirizacao/rotas/${rotaAtual.id}/`, 'DELETE');
+        if (String(state.manifestoEditandoId) === String(rotaAtual.id)) {
+            fecharFormManifesto();
+        }
+        fecharModalManifesto();
+        showToast('Manifesto excluído com sucesso.', 'success');
+        await carregarDados();
+    } catch (err) {
+        showToast(err?.message || 'Não foi possível excluir o manifesto.', 'error');
+    }
 }
 
 function normalizarPedidoForm(pedido) {
@@ -1226,24 +1490,32 @@ async function salvarFormManifesto(event) {
         return;
     }
     try {
-        const codigo = `MF-${hojeISO().replace(/-/g, '')}-${veiculo}-${Date.now().toString().slice(-4)}`;
-        const rota = await api.request('/roteirizacao/rotas/', 'POST', {
-            codigo,
+        const payload = {
             data_rota: document.getElementById('incSaidaData')?.value || hojeISO(),
             veiculo: Number(veiculo),
             motorista: Number(motorista.usuario_id),
             ajudante: ajudante?.usuario_id ? Number(ajudante.usuario_id) : null,
             equipe: equipeDoMotorista ? equipeDoMotorista.id : null,
-            status: 'PLANEJADA',
             observacoes: [
                 `Unidade ${document.getElementById('incUnidade')?.value || ''}`,
                 `Motorista ${nomeFuncionario(motorista || { nome: '' })}`,
                 `Ajudante ${ajudante ? nomeFuncionario(ajudante) : 'NENHUM'}`,
                 `KM ${document.getElementById('incKmIni')?.value || 0}-${document.getElementById('incKmFim')?.value || 0}`,
             ].join('; '),
-        });
-        await api.request(`/roteirizacao/rotas/${rota.id}/adicionar_pedidos/`, 'POST', { pedido_ids: ids });
-        showToast('Manifesto incluído com sucesso.', 'success');
+            pedido_ids: ids,
+        };
+        if (!state.manifestoEditandoId) {
+            payload.codigo = `MF-${hojeISO().replace(/-/g, '')}-${veiculo}-${Date.now().toString().slice(-4)}`;
+            payload.status = 'PLANEJADA';
+        }
+
+        const rota = state.manifestoEditandoId
+            ? await api.request(`/roteirizacao/rotas/${state.manifestoEditandoId}/`, 'PATCH', payload)
+            : await api.request('/roteirizacao/rotas/', 'POST', payload);
+        if (!state.manifestoEditandoId) {
+            await api.request(`/roteirizacao/rotas/${rota.id}/adicionar_pedidos/`, 'POST', { pedido_ids: ids });
+        }
+        showToast(state.manifestoEditandoId ? 'Manifesto atualizado com sucesso.' : 'Manifesto incluído com sucesso.', 'success');
         fecharFormManifesto();
         await carregarDados();
     } catch (err) {

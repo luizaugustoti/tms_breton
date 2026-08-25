@@ -4,7 +4,7 @@
 // Abas: Usuários | Funcionários | Estoque | Veículos
 // ─────────────────────────────────────────────────────────────
 
-import { api, authService, authStorage } from '../api/api.js?v=15';
+import { api, authService, authStorage } from '../api/api.js?v=17';
 import { checkAuth } from '../utils/auth-guard.js';
 import { openModal, showToast } from '../utils/modal.js';
 

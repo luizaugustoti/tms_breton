@@ -4,6 +4,7 @@ from rest_framework import status, viewsets
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
+from django.db import transaction
 from django.db.models import Max, Q
 import base64
 import json
@@ -56,6 +57,50 @@ def _get_rota_backlog_ativa():
         status='PLANEJADA',
     )
     return rota
+
+
+def _normalizar_pedido_ids(pedido_ids):
+    ids = []
+    vistos = set()
+    for pedido_id in pedido_ids or []:
+        try:
+            pid = int(pedido_id)
+        except (TypeError, ValueError):
+            continue
+        if pid in vistos:
+            continue
+        vistos.add(pid)
+        ids.append(pid)
+    return ids
+
+
+def _sincronizar_paradas_da_rota(rota, pedido_ids):
+    if pedido_ids is None:
+        return
+
+    ids_normalizados = _normalizar_pedido_ids(pedido_ids)
+    paradas_atuais = {
+        parada.pedido_id: parada
+        for parada in rota.paradas.select_related('pedido').all()
+    }
+
+    with transaction.atomic():
+        rota.paradas.exclude(pedido_id__in=ids_normalizados).delete()
+
+        for sequencia, pedido_id in enumerate(ids_normalizados, start=1):
+            parada = paradas_atuais.get(pedido_id)
+            if parada:
+                if parada.sequencia != sequencia:
+                    parada.sequencia = sequencia
+                    parada.save(update_fields=['sequencia'])
+                continue
+
+            ParadaRota.objects.create(
+                rota=rota,
+                pedido_id=pedido_id,
+                sequencia=sequencia,
+                status='PENDENTE',
+            )
 
 
 def _sincronizar_parada_do_pedido(pedido, veiculo=None):
@@ -306,6 +351,19 @@ class RotaViewSet(viewsets.ModelViewSet):
     queryset = Rota.objects.select_related('veiculo', 'equipe', 'motorista', 'ajudante').prefetch_related('paradas__pedido').all()
     serializer_class = RotaSerializer
     permission_classes = [IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        data = request.data.copy()
+        pedido_ids = data.pop('pedido_ids', None)
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        if pedido_ids is not None:
+            _sincronizar_paradas_da_rota(serializer.instance, pedido_ids)
+        serializer.instance.refresh_from_db()
+        return Response(self.get_serializer(serializer.instance).data)
 
     @action(detail=True, methods=['post'])
     def adicionar_pedidos(self, request, pk=None):

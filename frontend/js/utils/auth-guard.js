@@ -1,5 +1,5 @@
 // frontend/js/utils/auth-guard.js
-import { authStorage, authService } from '../api/api.js?v=15';
+import { authStorage, authService } from '../api/api.js?v=17';
 
 const PAGE_ACCESS = {
     'dashboard.html': ['TI', 'Admin', 'Gestor', 'Gestor Operacional', 'Operacional', 'Motorista', 'Ajudante'],
