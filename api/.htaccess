@@ -1,0 +1,8 @@
+# Fallback em hospedagem so com PHP/Apache.
+# O login so funciona quando o Django (Passenger / Python App) estiver no ar.
+# Se o cPanel "Setup Python App" estiver ativo nesta pasta, substitua este
+# arquivo por htaccess.passenger.
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ router.php [QSA,L]

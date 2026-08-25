@@ -1,0 +1,63 @@
+/* Ícones de linha, monocromáticos — herdam a cor do texto */
+.tms-icon {
+    width: 1.05em;
+    height: 1.05em;
+    max-width: none;
+    display: inline-block;
+    vertical-align: -0.18em;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    color: inherit;
+}
+
+.sidebar__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15em;
+    font-size: 1rem;
+    line-height: 1;
+    color: inherit;
+}
+
+.sidebar__icon .tms-icon {
+    width: 1.05em;
+    height: 1.05em;
+}
+
+.tab-btn .tms-icon,
+.btn .tms-icon,
+.btn-action .tms-icon,
+.vei-btn .tms-icon,
+.minuta-btn .tms-icon,
+.action-btn .tms-icon {
+    margin-right: 6px;
+}
+
+.btn-action.btn-delete .tms-icon,
+.btn-action.btn-delete {
+    color: inherit;
+}
+
+.vei-btn,
+.vei-btn--qr,
+.vei-btn--incluir,
+.vei-btn--excel,
+.vei-btn--status {
+    border: 1px solid #c9bdb4 !important;
+    color: #5A1827 !important;
+    background: #fff !important;
+}
+
+.search-input,
+input.search-mini {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237A6055' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3-3'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    background-size: 16px 16px;
+    padding-left: 34px;
+}

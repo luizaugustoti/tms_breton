@@ -1,0 +1,40 @@
+INFO:waitress:Serving on http://0.0.0.0:8002
+Not Found: /favicon.ico
+WARNING:django.request:Not Found: /favicon.ico
+Unauthorized: /api/v1/auth/login/
+WARNING:django.request:Unauthorized: /api/v1/auth/login/
+Not Found: /api/v1/health
+WARNING:django.request:Not Found: /api/v1/health
+Bad Request: /api/v1/auth/login/
+WARNING:django.request:Bad Request: /api/v1/auth/login/
+Not Found: /favicon.ico
+WARNING:django.request:Not Found: /favicon.ico
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 2
+Bad Request: /api/v1/pedidos/
+WARNING:django.request:Bad Request: /api/v1/pedidos/
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 2
+Bad Request: /api/v1/pedidos/
+WARNING:django.request:Bad Request: /api/v1/pedidos/
+Bad Request: /api/v1/pedidos/
+WARNING:django.request:Bad Request: /api/v1/pedidos/
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 2
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+WARNING:waitress.queue:Task queue depth is 1
+Unauthorized: /api/v1/auth/login/
+WARNING:django.request:Unauthorized: /api/v1/auth/login/

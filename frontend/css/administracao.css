@@ -1,0 +1,26 @@
+/* frontend/css/administracao.css */
+
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.config-card {
+    background-color: var(--color-background);
+    border: 1px solid #E0E0E0;
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+}
+
+.config-card h3 {
+    font-size: 1.1rem;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.log-ip {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--color-text-light);
+}

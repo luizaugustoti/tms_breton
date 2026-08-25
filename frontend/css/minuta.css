@@ -1,0 +1,288 @@
+/* Formulário 001 - Emissão de Minuta */
+body.view-minuta .header {
+    display: none;
+}
+
+.minuta {
+    background: #f3f3f3;
+    border: 1px solid #d8d8d8;
+    padding: 10px 12px 16px;
+    font-size: 12px;
+    color: #222;
+}
+
+.minuta * {
+    box-sizing: border-box;
+}
+
+.minuta__title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 10px;
+    color: #111;
+}
+
+.minuta__toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.minuta-btn {
+    appearance: none;
+    border: 1px solid #c48a4a;
+    background: #f0c48a;
+    color: #3c2a12;
+    font: inherit;
+    font-weight: 700;
+    padding: 4px 10px;
+    min-height: 28px;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
+.minuta-btn:hover {
+    background: #e8b56f;
+}
+
+.minuta-btn--ghost {
+    background: #fff;
+    border-color: #bbb;
+    color: #444;
+}
+
+.minuta-btn--icon {
+    min-width: 26px;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+.minuta-row {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.minuta-row--top {
+    grid-template-columns: 90px 120px 90px auto auto 90px 1.3fr 1fr;
+    align-items: end;
+}
+
+.minuta-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.minuta-field label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #222;
+}
+
+.minuta-field input,
+.minuta-field select,
+.minuta-field textarea {
+    width: 100%;
+    min-height: 26px;
+    border: 1px solid #c8c8c8;
+    background: #fff;
+    padding: 3px 6px;
+    font: inherit;
+    border-radius: 0;
+}
+
+.minuta-field input:focus,
+.minuta-field select:focus,
+.minuta-field textarea:focus {
+    outline: 1px solid #8a2b3b;
+    border-color: #8a2b3b;
+}
+
+.minuta-field--req input,
+.minuta-field--req select {
+    border-color: #a94442;
+}
+
+.minuta-inline {
+    display: flex;
+    gap: 6px;
+    align-items: end;
+}
+
+.minuta-block {
+    background: #fff;
+    border: 1px solid #d5d5d5;
+    margin-bottom: 8px;
+}
+
+.minuta-block__head {
+    background: #dff0d8;
+    border-bottom: 1px solid #c8dfc0;
+    padding: 5px 8px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.minuta-block__body {
+    padding: 8px;
+}
+
+.minuta-parties {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.minuta-grid {
+    display: grid;
+    gap: 6px 8px;
+}
+
+.minuta-grid--remetente {
+    grid-template-columns: 160px 1fr 70px;
+}
+
+.minuta-grid--end {
+    grid-template-columns: 1fr 160px 90px;
+}
+
+.minuta-grid--cid {
+    grid-template-columns: 1fr 80px;
+}
+
+.minuta-grid--exp {
+    grid-template-columns: 160px 1fr 1fr 70px;
+}
+
+.minuta-search {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.minuta-search input {
+    flex: 1;
+}
+
+.minuta-nf-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.minuta-table-wrap {
+    overflow-x: auto;
+    border: 1px solid #d0d0d0;
+}
+
+.minuta-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1100px;
+    background: #fff;
+}
+
+.minuta-table th {
+    background: #d9d9d9;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+    padding: 5px 6px;
+    border-right: 1px solid #c4c4c4;
+    white-space: nowrap;
+}
+
+.minuta-table td {
+    padding: 3px;
+    border-top: 1px solid #ececec;
+}
+
+.minuta-table input {
+    width: 100%;
+    min-height: 24px;
+    border: 1px solid #ddd;
+    padding: 2px 4px;
+    font: inherit;
+}
+
+.minuta-trio {
+    display: grid;
+    grid-template-columns: 1.1fr 1.2fr 0.9fr;
+    gap: 8px;
+}
+
+.minuta-grid--transp {
+    grid-template-columns: 1fr 1fr;
+}
+
+.minuta-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0;
+    font-weight: 600;
+}
+
+.minuta-mini-table input {
+    min-width: 0;
+}
+
+.minuta-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.minuta-forecast,
+.minuta-transp {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 8px;
+}
+
+.minuta-hint {
+    margin: 0 0 8px;
+    color: #666;
+    font-size: 11px;
+}
+
+@media (max-width: 1200px) {
+    .minuta-split {
+        grid-template-columns: 1fr;
+    }
+}
+
+.minuta-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+@media (max-width: 1200px) {
+    .minuta-row--top,
+    .minuta-parties,
+    .minuta-trio,
+    .minuta-dates {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    .minuta-row--top,
+    .minuta-parties,
+    .minuta-trio,
+    .minuta-dates,
+    .minuta-grid--remetente,
+    .minuta-grid--end,
+    .minuta-grid--exp {
+        grid-template-columns: 1fr;
+    }
+}

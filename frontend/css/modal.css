@@ -1,0 +1,395 @@
+/* frontend/css/modal.css — Sistema Global de Modal & Toast TMS Breton */
+
+/* =========================================================
+   OVERLAY / BACKDROP
+   ========================================================= */
+.tms-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    animation: modalFadeIn 0.2s ease forwards;
+}
+
+@keyframes modalFadeIn {
+    to { opacity: 1; }
+}
+
+/* =========================================================
+   MODAL BOX
+   ========================================================= */
+.tms-modal {
+    background: var(--color-surface, #FFFFFF);
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 14px;
+    padding: 28px 32px;
+    width: min(100%, 980px);
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    transform: translateY(-20px);
+    animation: modalSlideIn 0.25s ease forwards;
+    position: relative;
+}
+
+@keyframes modalSlideIn {
+    to { transform: translateY(0); }
+}
+
+.tms-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.tms-modal__title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--color-text, #2C2C2C);
+    margin: 0;
+}
+
+.tms-modal__close {
+    background: none;
+    border: none;
+    color: var(--color-text-light, #666666);
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s;
+}
+
+.tms-modal__close:hover {
+    background: rgba(0,0,0,0.05);
+    color: #2C2C2C;
+}
+
+/* =========================================================
+   FORM ELEMENTS
+   ========================================================= */
+.tms-modal .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.tms-modal .form-row.single {
+    grid-template-columns: 1fr;
+}
+
+.tms-modal .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tms-modal .form-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-light, #666666);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tms-modal .form-group input,
+.tms-modal .form-group select,
+.tms-modal .form-group textarea {
+    background: #F9F9F9;
+    border: 1px solid #CCCCCC;
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--color-text, #2C2C2C);
+    font-size: 0.875rem;
+    font-family: inherit;
+    transition: border-color 0.15s, background 0.15s;
+    outline: none;
+}
+.tms-modal .form-group input::placeholder,
+.tms-modal .form-group textarea::placeholder {
+    color: #999999;
+}
+
+.tms-modal .form-group input:focus,
+.tms-modal .form-group select:focus,
+.tms-modal .form-group textarea:focus {
+    border-color: var(--color-accent, #7C5CBF);
+    background: #FFFFFF;
+}
+
+.tms-modal .form-group select option {
+    background: #FFFFFF;
+    color: #2C2C2C;
+}
+
+.tms-modal .form-group textarea {
+    resize: vertical;
+    min-height: 72px;
+}
+
+/* =========================================================
+   FOOTER / ACTIONS
+   ========================================================= */
+.tms-modal__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.tms-modal__footer .btn-cancel {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--color-text-light, #9E9E9E);
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.tms-modal__footer .btn-cancel:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+.tms-modal__footer .btn-confirm {
+    background: var(--color-accent, #7C5CBF);
+    border: none;
+    color: #fff;
+    padding: 9px 22px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+}
+
+.tms-modal__footer .btn-confirm:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+.tms-modal__footer .btn-confirm:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* =========================================================
+   TOAST NOTIFICATIONS
+   ========================================================= */
+#tms-toast-container {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.tms-toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 20px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #fff;
+    min-width: 280px;
+    max-width: 380px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    pointer-events: all;
+    animation: toastIn 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translateX(40px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.tms-toast.success {
+    background: #1B2D1B;
+    border-color: #4CAF50;
+}
+
+.tms-toast.error {
+    background: #2D1B1B;
+    border-color: #F44336;
+}
+
+.tms-toast.info {
+    background: #1B1E2D;
+    border-color: #7C5CBF;
+}
+
+.tms-toast .toast-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.tms-toast.fade-out {
+    animation: toastOut 0.3s ease forwards;
+}
+
+@keyframes toastOut {
+    to { opacity: 0; transform: translateX(40px); }
+}
+
+/* =========================================================
+   CUSTOM SECTIONS E GRIDS (PARA DADOS ESTRUTURADOS)
+   ========================================================= */
+.tms-modal-section {
+    margin-top: 24px;
+    margin-bottom: 8px;
+}
+
+.tms-modal-section.first {
+    margin-top: 0;
+}
+
+.tms-modal-section-title {
+    font-size: 0.85rem;
+    color: var(--color-accent, #7C5CBF);
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    padding-bottom: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tms-data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.tms-data-item {
+    background: #F9F9F9;
+    border: 1px solid #EAEAEA;
+    padding: 10px 14px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tms-data-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.tms-data-label {
+    font-size: 0.7rem;
+    color: var(--color-text-light, #666666);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.tms-data-value {
+    font-size: 0.9rem;
+    color: var(--color-text, #2C2C2C);
+    font-weight: 500;
+    word-break: break-word;
+}
+
+.tms-items-table {
+    width: 100%;
+    min-width: 620px;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 0.85rem;
+}
+
+.tms-items-table th, .tms-items-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    color: var(--color-text, #2C2C2C);
+    vertical-align: top;
+}
+
+.tms-items-table th {
+    color: var(--color-text-light, #666666);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    background: #F5F5F5;
+}
+
+.tms-items-table tr:hover td {
+    background: rgba(255,255,255,0.03);
+}
+
+.tms-items-table-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.tms-items-table-wrap::-webkit-scrollbar {
+    display: none;
+}
+
+@media (max-width: 760px) {
+    .tms-modal {
+        width: min(96vw, 980px);
+        padding: 18px 16px;
+        max-height: 86vh;
+        border-radius: 12px;
+    }
+
+    .tms-modal__header {
+        align-items: flex-start;
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+    }
+
+    .tms-modal__title {
+        font-size: 1rem;
+        line-height: 1.35;
+    }
+
+    .tms-modal__footer {
+        flex-direction: column-reverse;
+    }
+
+    .tms-modal__footer .btn-cancel,
+    .tms-modal__footer .btn-confirm {
+        width: 100%;
+    }
+
+    .tms-modal .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .tms-data-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tms-data-item {
+        padding: 10px 12px;
+    }
+}

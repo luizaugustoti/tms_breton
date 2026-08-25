@@ -1,0 +1,361 @@
+/* ==========================================================================
+   TMS Breton - App Comprovante de Entrega (CSS Corrigido & Polido)
+   ========================================================================== */
+
+/* Reset de Box Model para evitar quebra de layout */
+.driver-container,
+.driver-container * {
+    box-sizing: border-box;
+}
+
+:root {
+    --breton-vinho: #5A1827;
+    --breton-vinho-dark: #3D0E19;
+    --breton-vinho-hover: #7A2437;
+    --breton-gold: #C5A059;
+    --breton-bg: #F9F8F6;
+    --breton-surface: #FFFFFF;
+    --breton-border: #E2DCD5;
+    --breton-text: #222222;
+    --breton-text-muted: #666666;
+}
+
+body.driver-body {
+    background-color: var(--breton-bg);
+    margin: 0;
+    padding: 0;
+    font-family: 'Montserrat', sans-serif;
+    color: var(--breton-text);
+    -webkit-font-smoothing: antialiased;
+}
+
+.driver-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding-bottom: 40px;
+}
+
+/* Header em Vinho Oficial */
+.driver-header {
+    background-color: var(--breton-vinho);
+    color: #FFFFFF;
+    padding: 20px;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    box-shadow: 0 4px 18px rgba(90, 24, 39, 0.2);
+    border-bottom: 2px solid var(--breton-gold);
+}
+
+.driver-header__brand {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.driver-header__logo {
+    font-weight: 700;
+    font-size: 1.3rem;
+    letter-spacing: 3px;
+    color: #FFFFFF;
+}
+
+.driver-header__badge {
+    background-color: var(--breton-gold);
+    color: var(--breton-vinho-dark);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    text-transform: uppercase;
+}
+
+.driver-header__order-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.order-code {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--breton-gold);
+}
+
+.order-client {
+    font-size: 0.85rem;
+    color: #E2D5D8;
+}
+
+/* Estrutura de Cards */
+.driver-content {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.card-driver {
+    background-color: var(--breton-surface);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--breton-border);
+}
+
+.card-driver__title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--breton-vinho);
+    margin-top: 0;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--breton-border);
+    padding-bottom: 8px;
+}
+
+.item-details p {
+    margin: 6px 0;
+    font-size: 0.85rem;
+    color: #444444;
+}
+
+/* Checklist */
+.checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: var(--breton-text);
+    cursor: pointer;
+}
+
+.check-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--breton-vinho);
+    cursor: pointer;
+}
+
+/* Avaliação / Estrelas */
+.rating-instruction {
+    font-size: 0.8rem;
+    color: var(--breton-text-muted);
+    margin-bottom: 10px;
+}
+
+.star-rating {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    padding: 10px 0;
+}
+
+.star {
+    font-size: 2.2rem;
+    color: #E0DDD7;
+    cursor: pointer;
+    transition: color 0.2s ease, transform 0.1s ease;
+}
+
+.star.active {
+    color: var(--breton-gold);
+}
+
+.star:active {
+    transform: scale(1.15);
+}
+
+/* Estilização dos Form Inputs e Textareas */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.form-group label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--breton-vinho);
+}
+
+.form-group input, 
+.form-group textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--breton-border);
+    border-radius: 8px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.88rem;
+    background-color: #FAF9F6;
+    color: var(--breton-text);
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.form-group input:focus, 
+.form-group textarea:focus {
+    border-color: var(--breton-vinho);
+    background-color: #FFFFFF;
+    box-shadow: 0 0 0 3px rgba(90, 24, 39, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Canvas de Assinatura */
+.signature-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.signature-block label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--breton-vinho);
+}
+
+.canvas-wrapper {
+    position: relative;
+    width: 100%;
+    height: 160px;
+    border: 1.5px solid var(--breton-border);
+    border-radius: 10px;
+    background-color: #FAF9F6;
+    overflow: hidden;
+    touch-action: none;
+    transition: border-color 0.2s ease;
+}
+
+.canvas-wrapper:focus-within,
+.canvas-wrapper:hover {
+    border-color: var(--breton-vinho);
+}
+
+#signatureCanvas {
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+
+.canvas-placeholder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.85rem;
+    color: #B5B0A6;
+    pointer-events: none;
+}
+
+.btn-clear-signature {
+    align-self: flex-end;
+    background-color: #FAF9F6;
+    border: 1px solid var(--breton-border);
+    border-radius: 6px;
+    color: var(--breton-text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 12px;
+    transition: all 0.2s ease;
+}
+
+.btn-clear-signature:hover {
+    background-color: #F0EAE1;
+    color: var(--breton-vinho);
+}
+
+/* Botão de Envio */
+.btn-submit-delivery {
+    width: 100%;
+    padding: 16px;
+    background-color: var(--breton-vinho);
+    color: #FFFFFF;
+    border: 1px solid var(--breton-gold);
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(90, 24, 39, 0.25);
+    transition: all 0.2s ease;
+    margin-top: 10px;
+}
+
+.btn-submit-delivery:hover,
+.btn-submit-delivery:active {
+    background-color: var(--breton-vinho-hover);
+}
+
+/* Modal de Sucesso (Estilização e Ocultação Garantida) */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(30, 10, 15, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    z-index: 9999;
+    backdrop-filter: blur(4px);
+}
+
+/* Oculta o modal estritamente quando possui a classe hidden */
+.modal-overlay.hidden {
+    display: none !important;
+}
+
+.modal-card {
+    background-color: var(--breton-surface);
+    border-radius: 16px;
+    padding: 30px 24px;
+    text-align: center;
+    max-width: 360px;
+    border: 1px solid var(--breton-gold);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.modal-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+}
+
+.modal-card h2 {
+    font-size: 1.25rem;
+    margin-bottom: 10px;
+    color: var(--breton-vinho);
+    font-weight: 700;
+}
+
+.modal-card p {
+    font-size: 0.85rem;
+    color: var(--breton-text-muted);
+    margin-bottom: 22px;
+    line-height: 1.4;
+}
+
+.btn-modal-close {
+    background-color: var(--breton-vinho);
+    color: #FFFFFF;
+    border: 1px solid var(--breton-gold);
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-modal-close:hover {
+    background-color: var(--breton-vinho-hover);
+}

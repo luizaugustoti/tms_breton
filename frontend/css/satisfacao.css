@@ -1,0 +1,152 @@
+/* frontend/css/satisfacao.css */
+
+.rating-stars {
+    color: #FFC107;
+    font-weight: bold;
+    font-size: 0.95rem;
+}
+
+.comment-box {
+    font-style: italic;
+    color: var(--color-text-light);
+    font-size: 0.85rem;
+}
+
+/* Container do Mapa */
+.map-card {
+    background-color: var(--color-surface);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.map-container {
+    width: 100%;
+    height: 420px;
+    border-radius: var(--border-radius);
+    border: 1px solid #E0E0E0;
+    margin-top: var(--spacing-md);
+    z-index: 1;
+}
+
+/* Estilização Customizada do Balão de Mensagem no Mapa */
+.leaflet-popup-content-wrapper {
+    background-color: #1A1A1A !important;
+    color: #FFFFFF !important;
+    border-radius: 8px !important;
+    padding: 6px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid var(--color-accent);
+}
+
+.leaflet-popup-tip {
+    background-color: #1A1A1A !important;
+}
+
+.popup-speech-bubble {
+    font-family: var(--font-main);
+    padding: 6px 4px;
+    max-width: 260px;
+}
+
+.popup-speech-bubble__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #333333;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+}
+
+.popup-speech-bubble__title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #FFFFFF;
+}
+
+.popup-speech-bubble__item {
+    font-size: 0.75rem;
+    color: var(--color-accent);
+    margin-bottom: 6px;
+    display: block;
+}
+
+.popup-speech-bubble__text {
+    font-size: 0.82rem;
+    font-style: italic;
+    line-height: 1.35;
+    background-color: #262626;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border-left: 3px solid var(--color-accent);
+    color: #E0E0E0;
+}
+
+/* ==========================================================================
+   MODO DE APRESENTAÇÃO ATIVO (Maximizado Fullscreen 100%)
+   ========================================================================== */
+
+body.presentation-mode {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background-color: var(--color-background) !important;
+    width: 100vw !important;
+    height: 100vh !important;
+}
+
+body.presentation-mode .layout {
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+}
+
+/* Esconde totalmente a barra lateral no Modo Apresentação */
+body.presentation-mode .sidebar,
+body.presentation-mode .submenu,
+body.presentation-mode .top-nav {
+    display: none !important;
+}
+
+/* Esconde o cabeçalho completo */
+body.presentation-mode .header {
+    display: none !important;
+}
+
+/* Expande o conteúdo principal para ocupar 100% da tela */
+body.presentation-mode .main-content {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    overflow: hidden !important;
+}
+
+body.presentation-mode .kpi-grid {
+    margin-bottom: var(--spacing-sm) !important;
+    flex-shrink: 0 !important;
+}
+
+body.presentation-mode .map-card {
+    flex: 1 !important;
+    margin-top: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: var(--spacing-md) !important;
+    height: calc(100vh - 160px) !important;
+    box-sizing: border-box !important;
+}
+
+body.presentation-mode .map-container {
+    flex: 1 !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    margin-top: var(--spacing-sm) !important;
+}

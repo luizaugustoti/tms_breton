@@ -1,0 +1,342 @@
+/* frontend/css/cadastros.css */
+
+.tabs-nav {
+    display: flex;
+    gap: var(--spacing-sm);
+    border-bottom: 2px solid #E0E0E0;
+    margin-bottom: var(--spacing-lg);
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 2px;
+}
+
+.tabs-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.tab-btn {
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-family: var(--font-main);
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-text-light);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.tab-btn:hover {
+    color: var(--color-primary);
+}
+
+.tab-btn--active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.tab-content {
+    display: none;
+    background-color: var(--color-surface);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow-x: auto;
+}
+
+.tab-content--active {
+    display: block;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.card-header h2 {
+    font-size: 1.3rem;
+    color: var(--color-primary);
+}
+
+.card-header > div {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--border-radius);
+    scrollbar-width: thin;
+}
+
+/* Tabelas de Dados */
+.data-table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.data-table th {
+    background-color: var(--color-background);
+    padding: 12px;
+    font-weight: 600;
+    color: var(--color-primary);
+    border-bottom: 2px solid #E0E0E0;
+}
+
+.data-table td {
+    padding: 12px;
+    border-bottom: 1px solid #E0E0E0;
+}
+
+.data-table tbody tr:hover {
+    background-color: #F0F0F0;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge--active {
+    background-color: #E8F5E9;
+    color: #2E7D32;
+}
+
+.badge--accent {
+    background-color: #FFF8E1;
+    color: #F57F17;
+}
+
+/* --- Estilização e Correção de Legibilidade dos Modais --- */
+
+/* Fundo escuro atrás do modal (Overlay) */
+.modal-overlay,
+.modal-backdrop,
+div[id*="modal"] {
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* Container do Modal */
+.modal,
+.modal-content,
+.modal-dialog {
+    background-color: var(--color-surface) !important;
+    color: var(--color-text-main) !important;
+    border-radius: var(--border-radius);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Título e Cabeçalho do Modal */
+.modal h2,
+.modal-title,
+.modal-header h2,
+.modal-header h3 {
+    color: var(--color-primary) !important; /* Tom Burgundy Breton */
+    font-weight: 600 !important;
+}
+
+/* Rótulos de Campos (Labels) */
+.modal label,
+.modal .form-label,
+.modal-body label {
+    color: var(--color-text-main) !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+}
+
+/* Entradas de Texto, Selects e Textareas */
+.modal input[type="text"],
+.modal input[type="email"],
+.modal input[type="number"],
+.modal input[type="date"],
+.modal select,
+.modal textarea,
+.modal .form-input {
+    color: #222222 !important;
+    background-color: #FFFFFF !important;
+    border: 1px solid #CCCCCC !important;
+    border-radius: var(--border-radius);
+    padding: 10px 12px !important;
+    font-size: 0.95rem !important;
+    font-family: var(--font-main) !important;
+}
+
+/* Cor do Texto nos Placeholders (Dicas de preenchimento) */
+.modal input::placeholder,
+.modal textarea::placeholder {
+    color: #888888 !important;
+    opacity: 1 !important;
+}
+
+/* Foco nos Inputs */
+.modal input:focus,
+.modal select:focus,
+.modal textarea:focus {
+    border-color: var(--color-accent) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(163, 128, 104, 0.2) !important;
+}
+
+/* Botão de Fechar (X) */
+.modal-close,
+.close-btn,
+.modal-header .close {
+    color: var(--color-text-light) !important;
+    cursor: pointer;
+}
+
+.modal-close:hover,
+.close-btn:hover {
+    color: var(--color-primary) !important;
+}
+
+/* --- CORREÇÃO DEFINITIVA DE CONTRASTE DOS MODAIS --- */
+
+/* 1. Título do Modal (Novo Cliente / Embarcador) */
+.modal-header,
+.modal-header h2,
+.modal-header h3,
+.modal-title,
+div[id*="modal"] h2,
+div[class*="modal"] h2 {
+    color: var(--color-primary, #6B2335) !important;
+    font-weight: 700 !important;
+    opacity: 1 !important;
+}
+
+/* 2. Rótulos/Labels dos Campos (RAZÃO SOCIAL, CNPJ, etc) */
+.modal-body label,
+.modal label,
+.form-group label,
+div[class*="modal"] label {
+    color: #333333 !important;
+    font-weight: 600 !important;
+    opacity: 1 !important;
+}
+
+/* 3. Texto DIGITADO e selecionado dentro dos Inputs/Selects (sadadas) */
+.modal input,
+.modal select,
+.modal textarea,
+.modal .form-input,
+div[class*="modal"] input,
+div[class*="modal"] select {
+    color: #1A1A1A !important;
+    background-color: #FFFFFF !important;
+    border: 1px solid #CCCCCC !important;
+    font-weight: 500 !important;
+    opacity: 1 !important;
+}
+
+/* 4. Texto dos Placeholders (Dicas de preenchimento) */
+.modal input::placeholder,
+.modal textarea::placeholder,
+div[class*="modal"] input::placeholder {
+    color: #888888 !important;
+    opacity: 1 !important;
+}
+
+/* 5. Opções dentro do Select */
+.modal select option {
+    color: #1A1A1A !important;
+    background-color: #FFFFFF !important;
+}
+/* BOTOES DE ACAO NAS TABELAS */
+.btn-edit, .btn-delete {
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 4px;
+}
+
+.btn-edit {
+    background-color: #E3F2FD;
+    color: #1565C0;
+}
+
+.btn-edit:hover {
+    background-color: #BBDEFB;
+}
+
+.btn-delete {
+    background-color: #FFEBEE;
+    color: #C62828;
+}
+
+.btn-delete:hover {
+    background-color: #FFCDD2;
+}
+
+@media (max-width: 640px) {
+    .tabs-nav {
+        gap: var(--spacing-sm);
+        padding-bottom: 4px;
+    }
+
+    .tab-btn {
+        padding: 10px 14px;
+        font-size: 0.82rem;
+    }
+
+    .tab-content {
+        padding: var(--spacing-md);
+    }
+
+    .card-header {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+    }
+
+    .card-header > div {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+
+    .card-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .card-header .form-input,
+    .card-header .btn,
+    .card-header input,
+    .card-header button {
+        width: 100% !important;
+        min-height: 44px !important;
+        max-width: 100% !important;
+    }
+
+    .data-table {
+        min-width: 720px;
+        font-size: 0.8rem;
+    }
+}

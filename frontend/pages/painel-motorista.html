@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TMS Breton — Portal do Motorista</title>
+    <meta name="description" content="Portal mobile do motorista Breton — entregas do dia, workflow de entrega e registro de ocorrências.">
+    <meta name="theme-color" content="#5A1827">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/icons.css">
+
+    <style>
+        /* ══════════════════════════════════════════
+           RESET E BASE MOBILE-FIRST
+        ══════════════════════════════════════════ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --vinho:   #5A1827;
+            --vinho-dk:#3d0f18;
+            --dourado: #C5A059;
+            --dourado-lt: #e8d4a6;
+            --bg:      #f5f0eb;
+            --card-bg: #ffffff;
+            --text:    #1a1a2e;
+            --muted:   #888;
+            --border:  #e8ddd5;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger:  #e74c3c;
+            --info:    #2980b9;
+            --radius:  12px;
+            --shadow:  0 4px 16px rgba(90,24,39,.1);
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* ══════════════════════════════════════════
+           TOP BAR (Header Mobile)
+        ══════════════════════════════════════════ */
+        .top-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: linear-gradient(135deg, var(--vinho), var(--vinho-dk));
+            color: #fff;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.2);
+        }
+        .top-bar__brand {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+        .top-bar__title {
+            font-size: .95rem;
+            font-weight: 700;
+            letter-spacing: .3px;
+        }
+        .top-bar__subtitle {
+            font-size: .65rem;
+            opacity: .75;
+            font-weight: 400;
+        }
+        .top-bar__actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .top-bar__avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: var(--dourado);
+            color: var(--vinho-dk);
+            font-weight: 700;
+            font-size: .85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .top-bar__btn {
+            background: rgba(255,255,255,.15);
+            border: 1px solid rgba(255,255,255,.25);
+            color: #fff;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: .72rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s;
+            font-family: 'Montserrat', sans-serif;
+        }
+        .top-bar__btn:hover { background: rgba(255,255,255,.25); }
+
+        /* ══════════════════════════════════════════
+           MOTORISTA HERO CARD
+        ══════════════════════════════════════════ */
+        .driver-hero {
+            background: linear-gradient(135deg, var(--vinho), #7a2035);
+            color: #fff;
+            padding: 20px 16px 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .driver-hero::after {
+            content: '🚚';
+            position: absolute;
+            right: -10px; bottom: -10px;
+            font-size: 5rem;
+            opacity: .08;
+        }
+        .driver-hero__info { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+        .driver-hero__photo {
+            width: 54px; height: 54px;
+            border-radius: 50%;
+            background: var(--dourado);
+            color: var(--vinho-dk);
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            border: 3px solid rgba(255,255,255,.3);
+        }
+        .driver-hero__name { font-size: 1rem; font-weight: 700; }
+        .driver-hero__meta { font-size: .75rem; opacity: .8; margin-top: 2px; }
+        .driver-hero__veiculo {
+            font-size: .7rem;
+            background: rgba(255,255,255,.15);
+            border-radius: 20px;
+            padding: 3px 10px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+        .driver-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .driver-stat {
+            background: rgba(255,255,255,.12);
+            border-radius: 10px;
+            padding: 10px 8px;
+            text-align: center;
+        }
+        .driver-stat__val { font-size: 1.4rem; font-weight: 700; color: var(--dourado); }
+        .driver-stat__lbl { font-size: .62rem; opacity: .8; margin-top: 2px; }
+
+        /* ══════════════════════════════════════════
+           FILTRO DE STATUS
+        ══════════════════════════════════════════ */
+        .filter-bar {
+            display: flex;
+            gap: 6px;
+            padding: 12px 16px;
+            overflow-x: auto;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            -webkit-overflow-scrolling: touch;
+        }
+        .filter-bar::-webkit-scrollbar { display: none; }
+        .filter-pill {
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+            background: transparent;
+            font-family: 'Montserrat', sans-serif;
+            font-size: .74rem;
+            font-weight: 600;
+            color: var(--muted);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all .15s;
+        }
+        .filter-pill--active { background: var(--vinho); color: #fff; border-color: var(--vinho); }
+
+        /* ══════════════════════════════════════════
+           SEÇÃO DE CARDS
+        ══════════════════════════════════════════ */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px 8px;
+        }
+        .section-header h2 {
+            font-size: .88rem;
+            font-weight: 700;
+            color: var(--vinho);
+        }
+        .section-header span {
+            font-size: .72rem;
+            color: var(--muted);
+            background: #f0e8e0;
+            padding: 3px 9px;
+            border-radius: 20px;
+        }
+
+        #entregasList { padding: 0 16px 24px; display: flex; flex-direction: column; gap: 12px; }
+
+        /* ══════════════════════════════════════════
+           CARD DE ENTREGA
+        ══════════════════════════════════════════ */
+        .entrega-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform .15s;
+        }
+        .entrega-card:active { transform: scale(.99); }
+
+        .entrega-card__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px 8px;
+            border-bottom: 1px solid #f5ede6;
+        }
+        .entrega-card__num {
+            font-size: .75rem;
+            font-weight: 700;
+            color: var(--vinho);
+        }
+
+        /* Status badge */
+        .status-badge {
+            font-size: .65rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+        .status-badge--pendente   { background: #fef9e7; color: #856404; border: 1px solid #f1c40f; }
+        .status-badge--em-rota    { background: #e8f4fd; color: #1a5276; border: 1px solid #2980b9; }
+        .status-badge--entregue   { background: #eafaf1; color: #1e8449; border: 1px solid #27ae60; }
+        .status-badge--ocorrencia { background: #fdf0ee; color: #721c24; border: 1px solid #e74c3c; }
+
+        .entrega-card__body { padding: 12px 14px 8px; }
+
+        .entrega-card__cliente {
+            font-size: .92rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .entrega-card__endereco {
+            font-size: .78rem;
+            color: var(--muted);
+            display: flex;
+            align-items: flex-start;
+            gap: 5px;
+            margin-bottom: 8px;
+            line-height: 1.45;
+        }
+        .entrega-card__tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .entrega-card__tag {
+            font-size: .66rem;
+            font-weight: 600;
+            background: #f5ede6;
+            color: #7a4020;
+            border-radius: 4px;
+            padding: 2px 7px;
+        }
+        .entrega-card__tag--periodo { background: rgba(90,24,39,.08); color: var(--vinho); }
+        .entrega-card__tag--vol     { background: rgba(197,160,89,.15); color: #8a6010; }
+
+        /* Barra de progresso de paradas (ex: 1ª de 5) */
+        .parada-prog {
+            font-size: .68rem;
+            color: var(--muted);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .parada-prog__bar {
+            flex: 1;
+            height: 4px;
+            background: #f0e8e0;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .parada-prog__fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--vinho), var(--dourado));
+            border-radius: 20px;
+            transition: width .4s;
+        }
+
+        /* Ações da entrega */
+        .entrega-card__actions {
+            display: grid;
+            gap: 6px;
+            padding: 8px 14px 12px;
+            border-top: 1px solid #f5ede6;
+        }
+        .entrega-card__actions--2col { grid-template-columns: 1fr 1fr; }
+        .entrega-card__actions--3col { grid-template-columns: 1fr 1fr 1fr; }
+
+        .action-btn {
+            border: none;
+            border-radius: 8px;
+            padding: 11px 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: .74rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .15s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            line-height: 1.2;
+            text-align: center;
+        }
+        .action-btn:active { transform: scale(.96); }
+        .action-btn__icon { font-size: 1.1rem; }
+
+        .action-btn--iniciar   { background: var(--info);    color: #fff; }
+        .action-btn--entregar  { background: var(--success);  color: #fff; }
+        .action-btn--ocorrencia{ background: #fff5f5;         color: var(--danger); border: 1.5px solid #f5c6cb; }
+        .action-btn--nav       { background: #f5ede6;         color: var(--vinho); }
+        .action-btn--concluido { background: #f0f0f0; color: #aaa; cursor: not-allowed; }
+        .action-btn:disabled, .action-btn--concluido { opacity: .65; pointer-events: none; }
+
+        /* ══════════════════════════════════════════
+           CARD DE OCORRÊNCIA (mini-form inline)
+        ══════════════════════════════════════════ */
+        .ocorrencia-form {
+            background: #fff5f5;
+            border-top: 1px solid #f5c6cb;
+            padding: 10px 14px;
+            display: none;
+        }
+        .ocorrencia-form.is-open { display: block; }
+        .ocorrencia-form select,
+        .ocorrencia-form textarea {
+            width: 100%;
+            margin-top: 6px;
+            padding: 8px 10px;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: .78rem;
+            background: #fff;
+            color: var(--text);
+        }
+        .ocorrencia-form textarea { resize: none; rows: 2; }
+        .ocorrencia-form__label {
+            font-size: .72rem;
+            font-weight: 700;
+            color: var(--danger);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .ocorrencia-btns { display: flex; gap: 6px; margin-top: 8px; }
+        .ocorrencia-btns button {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: .74rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+        }
+        .ocorrencia-btns .btn-cancel-oc { background: #f0f0f0; color: #666; }
+        .ocorrencia-btns .btn-send-oc   { background: var(--danger); color: #fff; }
+
+        /* ══════════════════════════════════════════
+           MODAL DE COMPROVANTE DE ENTREGA
+        ══════════════════════════════════════════ */
+        .comprovante-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.6);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        .comprovante-sheet {
+            background: #fff;
+            border-radius: 20px 20px 0 0;
+            padding: 20px 20px 32px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .comprovante-sheet h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--vinho);
+            margin-bottom: 14px;
+            text-align: center;
+        }
+        .comp-drag-handle {
+            width: 40px; height: 4px;
+            background: #ddd;
+            border-radius: 20px;
+            margin: 0 auto 16px;
+        }
+
+        /* Assinatura Digital */
+        .sig-canvas-wrap {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            background: #faf6f1;
+            overflow: hidden;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        #sigCanvas {
+            width: 100%;
+            height: 160px;
+            touch-action: none;
+            cursor: crosshair;
+        }
+        .sig-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .8rem;
+            color: #ccc;
+            font-weight: 600;
+            pointer-events: none;
+        }
+        .sig-actions {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+        .sig-actions button {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: .74rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1.5px solid var(--border);
+            background: #fff;
+            color: var(--muted);
+        }
+
+        /* Upload Foto */
+        .foto-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            background: #faf6f1;
+            margin-bottom: 14px;
+            cursor: pointer;
+            transition: border-color .15s;
+        }
+        .foto-upload-area:hover { border-color: var(--dourado); }
+        .foto-upload-area input { display: none; }
+        .foto-upload-area__icon { font-size: 1.6rem; }
+        .foto-upload-area p { font-size: .78rem; color: var(--muted); margin-top: 4px; }
+        .foto-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .foto-preview-grid__item {
+            position: relative;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            aspect-ratio: 1 / 1;
+        }
+        .foto-preview-grid__item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .foto-preview-grid__remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 22px;
+            height: 22px;
+            border: none;
+            border-radius: 999px;
+            background: rgba(0,0,0,.65);
+            color: #fff;
+            font-size: .82rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .foto-preview-empty {
+            font-size: .74rem;
+            color: var(--muted);
+            margin: -6px 0 10px;
+        }
+        .ressalva-itens-wrap {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fffaf7;
+            padding: 10px;
+            margin-bottom: 14px;
+        }
+        .ressalva-itens-title {
+            font-size: .76rem;
+            font-weight: 700;
+            color: var(--vinho);
+            margin-bottom: 8px;
+        }
+        .ressalva-itens-list {
+            max-height: 140px;
+            overflow: auto;
+            display: grid;
+            gap: 6px;
+        }
+        .ressalva-itens-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: .78rem;
+            color: var(--text);
+        }
+        .ressalva-fotos-wrap {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #e5d8c9;
+        }
+        .comp-confirm-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--success);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: .9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background .15s;
+        }
+        .comp-confirm-btn:disabled { background: #aaa; cursor: not-allowed; }
+        .comp-cancel-btn {
+            width: 100%;
+            padding: 10px;
+            background: none;
+            border: none;
+            font-family: 'Montserrat', sans-serif;
+            font-size: .8rem;
+            color: var(--muted);
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        /* ══════════════════════════════════════════
+           SKELETON
+        ══════════════════════════════════════════ */
+        .skeleton {
+            background: linear-gradient(90deg, #f0e8e0 25%, #faf6f1 50%, #f0e8e0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.2s infinite;
+            border-radius: 12px;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* ══════════════════════════════════════════
+           TOAST (mobile)
+        ══════════════════════════════════════════ */
+        #tms-toast-container {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+            width: 90%;
+            max-width: 360px;
+        }
+        .tms-toast {
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: .8rem;
+            font-weight: 600;
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.15);
+            animation: slideUp .2s ease;
+            width: 100%;
+        }
+        .tms-toast.success { background: #1e8449; color: #fff; }
+        .tms-toast.error   { background: #922b21; color: #fff; }
+        .tms-toast.info    { background: #1a5276; color: #fff; }
+        .tms-toast.fade-out { opacity: 0; transition: opacity .3s; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+        /* ══════════════════════════════════════════
+           ESTADOS VAZIOS
+        ══════════════════════════════════════════ */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--muted);
+        }
+        .empty-state__icon { font-size: 3rem; display: block; margin-bottom: 12px; }
+        .empty-state p { font-size: .85rem; line-height: 1.6; }
+
+        .checkin-overlay {
+            position: fixed; inset: 0; background: rgba(26,10,16,.55);
+            display: none; align-items: flex-end; justify-content: center;
+            z-index: 220; padding: 16px;
+        }
+        .checkin-sheet {
+            width: min(460px, 100%);
+            background: #fff;
+            border-radius: 18px 18px 12px 12px;
+            padding: 22px 18px 18px;
+            box-shadow: 0 -8px 32px rgba(0,0,0,.18);
+        }
+        .checkin-sheet h3 { font-size: 1.05rem; text-align: center; margin-bottom: 6px; }
+        .checkin-sheet p { font-size: .8rem; color: #777; text-align: center; margin-bottom: 16px; }
+        .checkin-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .checkin-btns button {
+            border: 1px solid var(--border); background: #faf7f4; border-radius: 12px;
+            padding: 14px 8px; font-family: inherit; font-weight: 700; font-size: .82rem;
+            cursor: pointer;
+        }
+        .checkin-btns button.is-active[data-gostou="1"] { border-color: #27ae60; background: #eafaf1; color: #1e8449; }
+        .checkin-btns button.is-active[data-gostou="0"] { border-color: #e74c3c; background: #fdecea; color: #922b21; }
+        .checkin-sheet textarea {
+            width: 100%; min-height: 72px; border: 1px solid #ddd; border-radius: 10px;
+            padding: 10px 12px; font-family: inherit; font-size: .8rem; resize: none; margin-bottom: 12px;
+        }
+        .checkin-enviar {
+            width: 100%; border: 0; border-radius: 10px; padding: 13px;
+            background: var(--vinho); color: #fff; font-weight: 700; font-family: inherit; cursor: pointer;
+        }
+        .checkin-pular {
+            width: 100%; margin-top: 8px; border: 0; background: none; color: #888;
+            font-family: inherit; font-size: .75rem; cursor: pointer;
+        }
+
+        /* ══════════════════════════════════════════
+           BOTTOM NAV
+        ══════════════════════════════════════════ */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            z-index: 100;
+            box-shadow: 0 -4px 16px rgba(0,0,0,.06);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .bottom-nav__item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 4px 8px;
+            gap: 3px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--muted);
+            font-size: .6rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color .15s;
+        }
+        .bottom-nav__item--active { color: var(--vinho); }
+        .bottom-nav__icon { font-size: 1.2rem; }
+
+        /* Extra padding para não esconder conteúdo atrás do bottom nav */
+        .page-content { padding-bottom: 80px; }
+
+        /* ══════════════════════════════════════════
+           RESPONSIVO DESKTOP (sidebar de gerentes)
+        ══════════════════════════════════════════ */
+        @media (min-width: 768px) {
+            #entregasList { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+            .bottom-nav { display: none; }
+            .page-content { padding-bottom: 24px; }
+        }
+        @media (max-width: 420px) {
+            .comprovante-sheet { padding: 14px 12px 20px; }
+            .sig-actions { flex-direction: column; }
+            .comp-confirm-btn { padding: 12px; font-size: .82rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══ Top Bar ═══ -->
+<header class="top-bar">
+    <div class="top-bar__brand">
+        <span class="top-bar__title">🚚 Portal do Motorista</span>
+        <span class="top-bar__subtitle">TMS Breton Operations</span>
+    </div>
+    <div class="top-bar__actions">
+        <a class="top-bar__btn" href="pedidos.html" title="Voltar ao operacional" style="text-decoration:none;display:flex;align-items:center;">←</a>
+        <button class="top-bar__btn" id="btnRefresh">🔄</button>
+        <div class="top-bar__avatar" id="topAvatar" title="Perfil">—</div>
+    </div>
+</header>
+
+<!-- ═══ Driver Hero ═══ -->
+<div class="driver-hero" id="driverHero">
+    <div class="driver-hero__info">
+        <div class="driver-hero__photo" id="driverPhoto">—</div>
+        <div>
+            <div class="driver-hero__name" id="driverName">Carregando...</div>
+            <div class="driver-hero__meta" id="driverMeta">Motorista</div>
+            <span class="driver-hero__veiculo" id="driverVeiculo">🚚 —</span>
+        </div>
+    </div>
+    <div class="driver-stats">
+        <div class="driver-stat">
+            <div class="driver-stat__val" id="statTotal">—</div>
+            <div class="driver-stat__lbl">Total Entregas</div>
+        </div>
+        <div class="driver-stat">
+            <div class="driver-stat__val" id="statConcluidas">—</div>
+            <div class="driver-stat__lbl">Concluídas</div>
+        </div>
+        <div class="driver-stat">
+            <div class="driver-stat__val" id="statPendentes">—</div>
+            <div class="driver-stat__lbl">Pendentes</div>
+        </div>
+    </div>
+</div>
+
+<div class="page-content">
+    <!-- ═══ Filtro de Status ═══ -->
+    <div class="filter-bar" id="filterBar">
+        <button class="filter-pill filter-pill--active" data-filter="todos">Todas</button>
+        <button class="filter-pill" data-filter="pendente">⏳ Pendentes</button>
+        <button class="filter-pill" data-filter="em-rota">🚀 Em Rota</button>
+        <button class="filter-pill" data-filter="entregue">✅ Entregues</button>
+        <button class="filter-pill" data-filter="ocorrencia">⚠️ Ocorrências</button>
+    </div>
+
+    <!-- ═══ Lista de Entregas ═══ -->
+    <div class="section-header">
+        <h2 id="sectionTitle">📋 Entregas de Hoje</h2>
+        <span id="sectionCount">—</span>
+    </div>
+
+    <div id="entregasList">
+        <!-- Skeletons iniciais -->
+        <div class="skeleton" style="height:170px"></div>
+        <div class="skeleton" style="height:150px"></div>
+        <div class="skeleton" style="height:180px"></div>
+    </div>
+</div>
+
+<!-- ═══ Modal Comprovante de Entrega (Bottom Sheet) ═══ -->
+<div class="comprovante-overlay" id="comprovanteOverlay" style="display:none;">
+    <div class="comprovante-sheet" id="comprovanteSheet">
+        <div class="comp-drag-handle"></div>
+        <h3>✅ Registrar Entrega</h3>
+        <p style="font-size:.78rem;color:#888;text-align:center;margin-bottom:14px" id="compPedidoInfo">Pedido —</p>
+
+        <!-- Assinatura Digital -->
+        <p id="lblAssinatura" style="font-size:.78rem;font-weight:700;color:#555;margin-bottom:6px">✍️ Assinatura do Recebedor</p>
+        <div class="sig-canvas-wrap" id="sigWrap">
+            <canvas id="sigCanvas"></canvas>
+            <div class="sig-placeholder" id="sigPlaceholder">Assinar aqui com o dedo</div>
+        </div>
+        <div class="sig-actions">
+            <button id="btnLimparSig">🗑️ Limpar</button>
+            <button id="btnCapturarSig" style="background:#f5ede6;color:var(--vinho);border-color:var(--dourado);">📷 Usar Foto</button>
+        </div>
+
+        <!-- Foto do produto entregue -->
+        <label class="foto-upload-area" id="fotoUploadArea">
+            <input type="file" id="fotoInput" accept="image/*" multiple>
+            <span class="foto-upload-area__icon">📷</span>
+            <p>Adicionar fotos da entrega (câmera ou galeria)</p>
+        </label>
+        <div id="fotoPreviewGrid" class="foto-preview-grid" style="display:none;"></div>
+        <p id="fotoPreviewEmpty" class="foto-preview-empty">Nenhuma foto selecionada.</p>
+
+        <!-- Nome do recebedor -->
+        <div style="margin-bottom:14px" id="nomeRecebedorWrap">
+            <label style="font-size:.75rem;font-weight:700;color:#555;display:block;margin-bottom:4px">👤 Nome do Recebedor</label>
+            <input type="text" id="nomeRecebedor" placeholder="Nome completo" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.82rem;">
+        </div>
+
+        <div style="margin-bottom:14px" id="documentoRecebedorWrap">
+            <label style="font-size:.75rem;font-weight:700;color:#555;display:block;margin-bottom:4px">🪪 Documento do Recebedor</label>
+            <input type="text" id="documentoRecebedor" placeholder="CPF/RG (opcional)" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.82rem;">
+        </div>
+
+        <div style="margin-bottom:14px" id="obsEntregaWrap">
+            <label style="font-size:.75rem;font-weight:700;color:#555;display:block;margin-bottom:4px">📝 Observações</label>
+            <textarea id="obsEntrega" rows="2" placeholder="Observações da entrega (opcional)" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.82rem;resize:none;"></textarea>
+        </div>
+
+        <div style="margin-bottom:14px" id="statusFinalWrap">
+            <label style="font-size:.75rem;font-weight:700;color:#555;display:block;margin-bottom:4px">🏁 Resultado da Entrega</label>
+            <select id="statusFinalEntrega" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.82rem;background:#fff;">
+                <option value="ENTREGA_REALIZADA">Entrega Realizada</option>
+                <option value="RESSALVA">Entrega com Ressalva</option>
+            </select>
+        </div>
+        <div id="ressalvaItensWrap" class="ressalva-itens-wrap" style="display:none;">
+            <div class="ressalva-itens-title">Selecione os produtos com observação</div>
+            <div id="ressalvaItensList" class="ressalva-itens-list"></div>
+            <div id="ressalvaFotosWrap" class="ressalva-fotos-wrap">
+                <label class="foto-upload-area" id="fotoRessalvaUploadArea" style="margin-bottom:8px;">
+                    <input type="file" id="fotoRessalvaInput" accept="image/*" multiple>
+                    <span class="foto-upload-area__icon">📸</span>
+                    <p>Adicionar fotos dos produtos com ressalva</p>
+                </label>
+                <div id="fotoRessalvaPreviewGrid" class="foto-preview-grid" style="display:none;"></div>
+                <p id="fotoRessalvaPreviewEmpty" class="foto-preview-empty">Nenhuma foto de ressalva selecionada.</p>
+            </div>
+        </div>
+
+        <button class="comp-confirm-btn" id="btnConfirmarEntrega">✅ Confirmar Entrega</button>
+        <button class="comp-cancel-btn" id="btnCancelarComprovante">Cancelar</button>
+    </div>
+</div>
+
+<div class="checkin-overlay" id="checkinOverlay">
+    <div class="checkin-sheet">
+        <h3>Check-in de satisfação</h3>
+        <p id="checkinCliente">Cliente</p>
+        <div class="checkin-btns">
+            <button type="button" data-gostou="1">👍 Gostou</button>
+            <button type="button" data-gostou="0">👎 Não gostou</button>
+        </div>
+        <textarea id="checkinComentario" placeholder="Comentário do cliente (opcional)"></textarea>
+        <button type="button" class="checkin-enviar" id="checkinEnviar">Registrar satisfação</button>
+        <button type="button" class="checkin-pular" id="checkinPular">Pular este check-in</button>
+    </div>
+</div>
+
+<!-- ═══ Bottom Nav ═══ -->
+<nav class="bottom-nav">
+    <button class="bottom-nav__item bottom-nav__item--active">
+        <span class="bottom-nav__icon">📋</span>Entregas
+    </button>
+    <button class="bottom-nav__item" id="navRefresh">
+        <span class="bottom-nav__icon">🔄</span>Atualizar
+    </button>
+    <a href="dashboard.html" class="bottom-nav__item">
+        <span class="bottom-nav__icon">📊</span>Painel
+    </a>
+    <button class="bottom-nav__item" id="btnNavLogout">
+        <span class="bottom-nav__icon">🚪</span>Sair
+    </button>
+</nav>
+
+<script type="module" src="../js/modules/painel-motorista.js?v=9"></script>
+</body>
+</html>

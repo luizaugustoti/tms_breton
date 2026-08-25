@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TMS Breton — Cadastros</title>
+    <meta name="description" content="Gestão de usuários, funcionários, estoque e veículos da operação logística Breton.">
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/cadastros.css">
+    <link rel="stylesheet" href="../css/modal.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ── Tabs ── */
+        .tabs-nav {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            padding: 0 0 0 2px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #e8ddd5;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            padding: 10px 22px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #7A6055;
+            cursor: pointer;
+            border-radius: 6px 6px 0 0;
+            transition: color .2s, border-color .2s, background .2s;
+            letter-spacing: .3px;
+        }
+        .tab-btn:hover { color: #5A1827; background: rgba(90,24,39,.05); }
+        .tab-btn--active {
+            color: #5A1827;
+            border-bottom-color: #C5A059;
+            background: rgba(197,160,89,.08);
+        }
+        .tab-content { display: none; }
+        .tab-content--active { display: block; }
+
+        /* ── Card toolbar ── */
+        .card-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 16px 0 16px 0;
+            margin-bottom: 4px;
+        }
+        .card-toolbar h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #5A1827;
+            margin: 0;
+        }
+        .toolbar-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .search-input {
+            padding: 8px 14px;
+            font-size: 0.875rem;
+            border: 1px solid #d6cec8;
+            border-radius: 6px;
+            background: #fff;
+            color: #333;
+            width: 240px;
+            font-family: 'Montserrat', sans-serif;
+            transition: border-color .2s;
+        }
+        .search-input:focus { outline: none; border-color: #C5A059; box-shadow: 0 0 0 3px rgba(197,160,89,.15); }
+
+        /* ── Badges ── */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: .3px;
+        }
+        .badge--success { background: #d4edda; color: #155724; }
+        .badge--warning { background: #fff3cd; color: #856404; }
+        .badge--danger  { background: #f8d7da; color: #721c24; }
+        .badge--info    { background: #d1ecf1; color: #0c5460; }
+        .badge--accent  { background: rgba(197,160,89,.18); color: #8a6a1a; }
+        .badge--vinho   { background: rgba(90,24,39,.10); color: #5A1827; }
+
+        /* ── Action buttons inside rows ── */
+        .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+        .btn-row .btn-action {
+            background: none;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 4px 9px;
+            font-size: 0.8rem;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            transition: all .15s;
+        }
+        .btn-row .btn-edit  { border-color: #C5A059; color: #8a6a1a; }
+        .btn-row .btn-edit:hover  { background: #C5A059; color: #fff; }
+        .btn-row .btn-delete { border-color: #c0392b; color: #c0392b; }
+        .btn-row .btn-delete:hover { background: #c0392b; color: #fff; }
+
+        /* ── Empty state ── */
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: #999;
+            font-size: 0.9rem;
+        }
+        .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+
+        /* ── Table tweaks ── */
+        .data-table th { white-space: nowrap; }
+        .data-table td { vertical-align: middle; }
+
+        /* ── Avatar pill for users ── */
+        .user-pill {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .user-avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, #5A1827, #C5A059);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 0.75rem; font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .fn-form { display: none; }
+        .fn-form.is-open { display: block; }
+        .fn-lista.is-hidden { display: none; }
+        .fn-head {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+        }
+        .fn-head h2 { margin: 0; color: #5A1827; font-size: 1.05rem; }
+        .fn-crumb { color: #7A6055; font-size: .8rem; margin: 0 0 14px; }
+        .fn-sec {
+            border: 1px solid #e8ddd5; border-radius: 10px; padding: 14px 16px 10px;
+            margin-bottom: 14px; background: #fff;
+        }
+        .fn-sec h3 {
+            margin: 0 0 12px; font-size: .78rem; letter-spacing: .4px; text-transform: uppercase;
+            color: #5A1827; border-bottom: 1px solid #efe6dc; padding-bottom: 8px;
+        }
+        .fn-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 12px; }
+        .fn-grid .span-2 { grid-column: span 2; }
+        .fn-grid .span-3 { grid-column: span 3; }
+        .fn-grid .span-4 { grid-column: span 4; }
+        .fn-field label {
+            display: block; font-size: .68rem; font-weight: 700; color: #7A6055;
+            margin-bottom: 4px; letter-spacing: .2px;
+        }
+        .fn-field input, .fn-field select, .fn-field textarea {
+            width: 100%; padding: 8px 10px; border: 1px solid #d6cec8; border-radius: 6px;
+            font-family: 'Montserrat', sans-serif; font-size: .8rem; background: #fff; color: #333;
+        }
+        .fn-field input:focus, .fn-field select:focus, .fn-field textarea:focus {
+            outline: none; border-color: #C5A059; box-shadow: 0 0 0 3px rgba(197,160,89,.15);
+        }
+        .fn-dep-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+        .fn-dep-table th { text-align: left; color: #7A6055; font-size: .68rem; padding: 4px 6px; }
+        .fn-dep-table td { padding: 4px 6px; }
+        .fn-dep-table input, .fn-dep-table select { width: 100%; }
+        .fn-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+        @media (max-width: 980px) {
+            .fn-grid { grid-template-columns: 1fr 1fr; }
+            .fn-grid .span-2, .fn-grid .span-3 { grid-column: span 2; }
+        }
+        @media (max-width: 640px) {
+            .fn-grid, .fn-grid .span-2, .fn-grid .span-3, .fn-grid .span-4 { grid-template-columns: 1fr; grid-column: auto; }
+        }
+
+        .vei-consulta { display: block; }
+        .vei-consulta.is-hidden { display: none; }
+        .vei-top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 16px; }
+        .vei-filtros {
+            flex: 1 1 640px; display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr));
+            gap: 8px 10px; background: #fff; border: 1px solid #e8ddd5; border-radius: 10px; padding: 12px;
+        }
+        .vei-filtros label { display: block; font-size: .66rem; font-weight: 700; color: #7A6055; margin-bottom: 3px; }
+        .vei-filtros input, .vei-filtros select {
+            width: 100%; padding: 7px 8px; border: 1px solid #d6cec8; border-radius: 6px;
+            font-family: inherit; font-size: .78rem; background: #fff;
+        }
+        .vei-acoes { display: flex; gap: 8px; flex-wrap: wrap; }
+        .vei-btn {
+            min-width: 92px; padding: 9px 12px; border-radius: 8px; font-family: inherit;
+            font-size: .78rem; font-weight: 700; cursor: pointer; background: #fff;
+        }
+        .vei-btn--qr,
+        .vei-btn--incluir,
+        .vei-btn--excel,
+        .vei-btn--status {
+            border: 1px solid #c9bdb4;
+            color: #5A1827;
+            background: #fff;
+        }
+        .vei-check { display: flex; flex-direction: column; gap: 6px; font-size: .75rem; }
+        .vei-check label { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #444; }
+        @media (max-width: 1100px) { .vei-filtros { grid-template-columns: repeat(3, 1fr); } }
+    </style>
+</head>
+<body class="dashboard-body">
+<div class="layout">
+
+    <!-- ═══ Sidebar ═══ -->
+    <aside class="sidebar">
+        <div class="sidebar__brand">
+            <h2 class="sidebar__title">BRETON</h2>
+            <span class="sidebar__subtitle">TMS Operations</span>
+        </div>
+                        <nav class="sidebar__nav">
+            <a href="dashboard.html"       class="sidebar__link"><span class="sidebar__icon">📊</span> Dashboard</a>
+            <a href="cadastros.html"       class="sidebar__link sidebar__link--active"><span class="sidebar__icon">📁</span> Cadastros</a>
+            <a href="estoque.html"         class="sidebar__link"><span class="sidebar__icon">🏭</span> Estoque</a>
+            <a href="pedidos.html"         class="sidebar__link"><span class="sidebar__icon">📦</span> Operacional</a>
+            <a href="painel-motorista.html" class="sidebar__link"><span class="sidebar__icon">📱</span> Painel do Motorista</a>
+            <a href="indicadores.html"     class="sidebar__link"><span class="sidebar__icon">📈</span> Indicadores</a>
+            <a href="satisfacao.html"      class="sidebar__link"><span class="sidebar__icon">⭐</span> Satisfação</a>
+            <a href="administracao.html"   class="sidebar__link"><span class="sidebar__icon">⚙️</span> Administração</a>
+        </nav>
+        <div class="sidebar__footer">
+            <a href="../index.html" class="sidebar__logout" id="btnLogout">Sair do Sistema</a>
+        </div>
+    </aside>
+
+    <!-- ═══ Main Content ═══ -->
+    <main class="main-content">
+        <header class="header">
+            <div class="header__title">
+                <h1>Cadastros</h1>
+                <p>Gestão de empresas, pessoas, usuários, funcionários, estoque e frota da operação Breton</p>
+            </div>
+        </header>
+
+        <!-- ── Tabs Navigation ── -->
+        <nav class="tabs-nav" id="cadastrosTabs" role="tablist" aria-label="Seções de cadastro">
+            <button class="tab-btn tab-btn--active" data-tab="pessoas"      role="tab" aria-selected="true"  aria-controls="tab-pessoas">🏢 Empresa / Pessoa</button>
+            <button class="tab-btn"                 data-tab="usuarios"     role="tab" aria-selected="false" aria-controls="tab-usuarios">👤 Usuários</button>
+            <button class="tab-btn"                 data-tab="funcionarios" role="tab" aria-selected="false" aria-controls="tab-funcionarios">👔 Funcionários</button>
+            <button class="tab-btn"                 data-tab="equipes"      role="tab" aria-selected="false" aria-controls="tab-equipes">👥 Equipes</button>
+            <button class="tab-btn"                 data-tab="estoque"      role="tab" aria-selected="false" aria-controls="tab-estoque">📦 Estoque</button>
+            <button class="tab-btn"                 data-tab="veiculos"     role="tab" aria-selected="false" aria-controls="tab-veiculos">🚚 Veículos</button>
+        </nav>
+
+        <!-- ══════════════════════════════════════════
+             ABA: EMPRESA / PESSOA
+        ══════════════════════════════════════════ -->
+        <section id="tab-pessoas" class="tab-content tab-content--active" role="tabpanel" aria-labelledby="tab-pessoas">
+            <div class="card-toolbar">
+                <h2>🏢 Empresa / Pessoa</h2>
+                <div class="toolbar-actions">
+                    <input type="text" id="searchPessoas" class="search-input" placeholder="Pesquisar empresa ou pessoa..." aria-label="Pesquisar empresas e pessoas">
+                    <button class="btn btn--primary" id="btnNewPessoa">+ Nova Empresa / Pessoa</button>
+                </div>
+            </div>
+            <p style="margin:0 0 12px;color:#7A6055;font-size:0.85rem;">Listagem das empresas e pessoas que entram nas emissões de minuta (remetente, destinatário, expedidor e local de entrega).</p>
+            <table class="data-table" aria-label="Tabela de empresas e pessoas">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>CNPJ / CPF</th>
+                        <th>Tipo</th>
+                        <th>Papel</th>
+                        <th>Cidade / UF</th>
+                        <th>Origem</th>
+                        <th>Emissões</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tablePessoasBody">
+                </tbody>
+            </table>
+        </section>
+
+        <section id="tab-usuarios" class="tab-content" role="tabpanel" aria-labelledby="tab-usuarios">
+            <div class="card-toolbar">
+                <h2>👤 Usuários do Sistema</h2>
+                <div class="toolbar-actions">
+                    <input type="text" id="searchUsuarios" class="search-input" placeholder="Pesquisar usuário..." aria-label="Pesquisar usuários">
+                    <button class="btn btn--primary" id="btnNewUsuario">+ Novo Usuário</button>
+                </div>
+            </div>
+            <table class="data-table" aria-label="Tabela de usuários">
+                <thead>
+                    <tr>
+                        <th>Usuário</th>
+                        <th>E-mail</th>
+                        <th>Perfil</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tableUsuariosBody">
+                    <!-- Renderizado via JS -->
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ══════════════════════════════════════════
+             ABA: FUNCIONÁRIOS
+        ══════════════════════════════════════════ -->
+        <section id="tab-funcionarios" class="tab-content" role="tabpanel" aria-labelledby="tab-funcionarios">
+            <div id="funcionarioLista" class="fn-lista">
+                <div class="card-toolbar">
+                    <h2>🏢 Funcionários &amp; Colaboradores</h2>
+                    <div class="toolbar-actions">
+                        <input type="text" id="searchFuncionarios" class="search-input" placeholder="Pesquisar funcionário..." aria-label="Pesquisar funcionários">
+                        <button class="btn btn--primary" id="btnNewFuncionario">+ Incluir novo</button>
+                    </div>
+                </div>
+                <table class="data-table" aria-label="Tabela de funcionários">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>CPF</th>
+                            <th>Cargo / Tipo</th>
+                            <th>CNH / Categoria</th>
+                            <th>Unidade</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableFuncionariosBody"></tbody>
+                </table>
+            </div>
+
+            <form id="funcionarioForm" class="fn-form" autocomplete="off">
+                <div class="fn-head">
+                    <div>
+                        <h2 id="fnTitulo">Funcionário &gt; Incluir novo</h2>
+                        <p class="fn-crumb">Ficha completa do colaborador, motorista ou ajudante</p>
+                    </div>
+                    <div class="fn-actions">
+                        <button type="button" class="btn" id="btnCancelarFuncionario">Voltar à lista</button>
+                        <button type="submit" class="btn btn--primary" id="btnSalvarFuncionario">Salvar colaborador</button>
+                    </div>
+                </div>
+                <input type="hidden" id="fn_id">
+
+                <div class="fn-sec">
+                    <h3>Identificação</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field"><label for="fn_unidade">Unidade</label>
+                            <select id="fn_unidade">
+                                <option>CIA DE TRANSPORTE</option>
+                                <option>HOLDING PACHECO</option>
+                                <option>BRETON</option>
+                            </select>
+                        </div>
+                        <div class="fn-field span-2"><label for="fn_cia_transporte">Cia de transporte</label>
+                            <input id="fn_cia_transporte" value="CIA DE TRANSPORTE">
+                        </div>
+                        <div class="fn-field"><label for="fn_matricula">Matrícula</label><input id="fn_matricula"></div>
+                        <div class="fn-field span-2"><label for="fn_nome">Nome completo</label><input id="fn_nome" required></div>
+                        <div class="fn-field"><label for="fn_tipo_cadastro">Tipo cadastro</label>
+                            <select id="fn_tipo_cadastro">
+                                <option value="">SELECIONE</option>
+                                <option>MOTORISTA</option>
+                                <option>AJUDANTE</option>
+                                <option>OPERACIONAL</option>
+                                <option>ADMINISTRATIVO</option>
+                                <option>TERCEIRO</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="fn_cargo">Cargo ocupacional</label>
+                            <select id="fn_cargo">
+                                <option value="">SELECIONE</option>
+                                <option>AJUDANTE</option>
+                                <option>Motorista</option>
+                                <option>Ajudante de Entrega</option>
+                                <option>Gerente de Operações</option>
+                                <option>Coordenador Logístico</option>
+                                <option>Supervisor de Frota</option>
+                                <option>Conferente de Estoque</option>
+                                <option>Assistente Administrativo</option>
+                                <option>Analista de TI</option>
+                                <option>Financeiro</option>
+                                <option>Outro</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Localização e formas de contato</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field"><label for="fn_cep">CEP</label><input id="fn_cep" placeholder="00000-000"></div>
+                        <div class="fn-field span-2"><label for="fn_endereco">Endereço</label><input id="fn_endereco"></div>
+                        <div class="fn-field"><label for="fn_numero">Número</label><input id="fn_numero"></div>
+                        <div class="fn-field"><label for="fn_bairro">Bairro</label><input id="fn_bairro"></div>
+                        <div class="fn-field"><label for="fn_cidade">Cidade</label><input id="fn_cidade"></div>
+                        <div class="fn-field span-2"><label for="fn_complemento">Complemento</label><input id="fn_complemento"></div>
+                        <div class="fn-field"><label for="fn_telefone">Telefone</label><input id="fn_telefone"></div>
+                        <div class="fn-field"><label for="fn_celular">Celular</label><input id="fn_celular"></div>
+                        <div class="fn-field"><label for="fn_email">E-mail</label><input id="fn_email" type="email"></div>
+                        <div class="fn-field"><label for="fn_nextel_numero">Nextel — número</label><input id="fn_nextel_numero"></div>
+                        <div class="fn-field"><label for="fn_nextel_id">Nextel — ID</label><input id="fn_nextel_id"></div>
+                    </div>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Título de eleitor e carteira de trabalho</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field"><label for="fn_titulo_eleitor">Número título</label><input id="fn_titulo_eleitor"></div>
+                        <div class="fn-field"><label for="fn_titulo_data_emissao">Data de emissão</label><input id="fn_titulo_data_emissao" type="date"></div>
+                        <div class="fn-field"><label for="fn_titulo_zona">Zona</label><input id="fn_titulo_zona"></div>
+                        <div class="fn-field"><label for="fn_titulo_secao">Seção</label><input id="fn_titulo_secao"></div>
+                        <div class="fn-field"><label for="fn_ctps_numero">Número CTPS</label><input id="fn_ctps_numero"></div>
+                        <div class="fn-field"><label for="fn_ctps_data_emissao">Data de emissão</label><input id="fn_ctps_data_emissao" type="date"></div>
+                        <div class="fn-field"><label for="fn_ctps_serie">Série</label><input id="fn_ctps_serie"></div>
+                        <div class="fn-field"><label for="fn_ctps_orgao_expedidor">Órgão expedidor</label><input id="fn_ctps_orgao_expedidor"></div>
+                    </div>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Registros</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field"><label for="fn_cpf">C.P.F.</label><input id="fn_cpf" required></div>
+                        <div class="fn-field"><label for="fn_rg">R.G.</label><input id="fn_rg"></div>
+                        <div class="fn-field"><label for="fn_rg_orgao_expedidor">R.G. órgão exp.</label><input id="fn_rg_orgao_expedidor"></div>
+                        <div class="fn-field"><label for="fn_rg_data_emissao">Data de emissão</label><input id="fn_rg_data_emissao" type="date"></div>
+                        <div class="fn-field"><label for="fn_cnh">Habilitação (CNH)</label><input id="fn_cnh"></div>
+                        <div class="fn-field"><label for="fn_cnh_codigo_seguranca">Cód. segurança CNH</label><input id="fn_cnh_codigo_seguranca"></div>
+                        <div class="fn-field"><label for="fn_categoria_cnh">Categoria</label>
+                            <select id="fn_categoria_cnh">
+                                <option value="">SELECIONE</option>
+                                <option>B</option><option>C</option><option>D</option><option>E</option>
+                                <option>AB</option><option>AC</option><option>AD</option><option>AE</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="fn_cnh_validade">Validade</label><input id="fn_cnh_validade" type="date"></div>
+                        <div class="fn-field"><label for="fn_cnh_data_primeira">Data 1ª CNH</label><input id="fn_cnh_data_primeira" type="date"></div>
+                        <div class="fn-field"><label for="fn_cnh_data_emissao">Data emissão CNH</label><input id="fn_cnh_data_emissao" type="date"></div>
+                        <div class="fn-field"><label for="fn_cnh_uf">UF CNH</label><input id="fn_cnh_uf" maxlength="2"></div>
+                        <div class="fn-field"><label for="fn_pis_pasep">PIS/PASEP</label><input id="fn_pis_pasep"></div>
+                    </div>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Pagamento</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field span-2"><label for="fn_banco">Banco</label>
+                            <select id="fn_banco">
+                                <option>BANCO BRADESCO S/A</option>
+                                <option>BANCO DO BRASIL S/A</option>
+                                <option>CAIXA ECONOMICA FEDERAL</option>
+                                <option>ITAU UNIBANCO S/A</option>
+                                <option>BANCO SANTANDER S/A</option>
+                                <option>NUBANK</option>
+                                <option>OUTRO</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="fn_tipo_conta">Tipo de conta</label>
+                            <select id="fn_tipo_conta">
+                                <option value="">SELECIONE</option>
+                                <option>CORRENTE</option>
+                                <option>POUPANCA</option>
+                                <option>SALARIO</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="fn_agencia">Agência</label><input id="fn_agencia"></div>
+                        <div class="fn-field"><label for="fn_conta_numero">Conta número</label><input id="fn_conta_numero"></div>
+                        <div class="fn-field"><label for="fn_pix_tipo">Chave Pix</label>
+                            <select id="fn_pix_tipo">
+                                <option value="">SELECIONE</option>
+                                <option>CPF</option>
+                                <option>E-MAIL</option>
+                                <option>TELEFONE</option>
+                                <option>ALEATORIA</option>
+                            </select>
+                        </div>
+                        <div class="fn-field span-2"><label for="fn_pix_chave">Chave Pix (valor)</label><input id="fn_pix_chave"></div>
+                    </div>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Fechamento da folha de pagamento</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field"><label for="fn_salario_base">Salário base</label><input id="fn_salario_base" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="fn_alimentacao">Alimentação</label><input id="fn_alimentacao" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="fn_vale_transporte">Vale transp.</label><input id="fn_vale_transporte" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="fn_convenio">Convênio</label><input id="fn_convenio" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="fn_inss">INSS</label><input id="fn_inss" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="fn_desconto_total">Valor total em R$ a ser descontado</label><input id="fn_desconto_total" type="number" step="0.01"></div>
+                    </div>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Segurado e memo</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field"><label for="fn_status_seguradora">Status na seguradora</label>
+                            <select id="fn_status_seguradora">
+                                <option>Nao cadastrado</option>
+                                <option>Cadastrado</option>
+                                <option>Pendente</option>
+                                <option>Vencido</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="fn_validade_seguradora">Validade</label><input id="fn_validade_seguradora" type="date"></div>
+                        <div class="fn-field"><label for="fn_autorizacao_seguradora">Autorização da seguradora</label><input id="fn_autorizacao_seguradora"></div>
+                        <div class="fn-field"><label for="fn_data_autorizacao_seguradora">Data da autorização</label><input id="fn_data_autorizacao_seguradora" type="date"></div>
+                        <div class="fn-field span-4"><label for="fn_memo">Memo</label><textarea id="fn_memo" rows="2"></textarea></div>
+                    </div>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Dependentes</h3>
+                    <table class="fn-dep-table">
+                        <thead>
+                            <tr><th>Nome</th><th>Data nascimento</th><th>Grau</th><th></th></tr>
+                        </thead>
+                        <tbody id="fnDependentesBody"></tbody>
+                    </table>
+                    <button type="button" class="btn" id="btnAddDependente" style="margin-top:8px;">+ Adicionar dependente</button>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Outras informações</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field"><label for="fn_admissao">Admissão</label><input id="fn_admissao" type="date"></div>
+                        <div class="fn-field"><label for="fn_data_nascimento">Data de nasc.</label><input id="fn_data_nascimento" type="date"></div>
+                        <div class="fn-field"><label for="fn_escolaridade">Escolaridade</label>
+                            <select id="fn_escolaridade">
+                                <option value="">SELECIONE</option>
+                                <option>FUNDAMENTAL</option>
+                                <option>MEDIO</option>
+                                <option>SUPERIOR</option>
+                                <option>POS-GRADUACAO</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="fn_municipio_nascimento">Município de nasc.</label><input id="fn_municipio_nascimento"></div>
+                        <div class="fn-field span-2"><label for="fn_nome_mae">Nome mãe</label><input id="fn_nome_mae"></div>
+                        <div class="fn-field span-2"><label for="fn_nome_pai">Nome pai</label><input id="fn_nome_pai"></div>
+                        <div class="fn-field span-2"><label for="fn_companheira">Companheira / Esposa</label><input id="fn_companheira"></div>
+                        <div class="fn-field"><label for="fn_estado_civil">Estado civil</label>
+                            <select id="fn_estado_civil">
+                                <option value="">Selecione</option>
+                                <option>SOLTEIRO</option>
+                                <option>CASADO</option>
+                                <option>DIVORCIADO</option>
+                                <option>VIUVO</option>
+                                <option>UNIAO ESTAVEL</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="fn_exame_toxicologico">Exame toxicológico</label>
+                            <select id="fn_exame_toxicologico">
+                                <option>NÃO APLICAVEL</option>
+                                <option>APROVADO</option>
+                                <option>REPROVADO</option>
+                                <option>PENDENTE</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="fn_vinculo">Vínculo</label>
+                            <select id="fn_vinculo">
+                                <option>CLT</option><option>PJ</option><option>Terceirizado</option><option>Estagiário</option><option>Temporário</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="fn_setor">Setor</label>
+                            <select id="fn_setor">
+                                <option>Operações</option><option>Frota</option><option>TI</option><option>Financeiro</option>
+                                <option>Estoque</option><option>Administrativo</option><option>RH</option><option>Comercial</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="fn_status_operacional">Status</label>
+                            <select id="fn_status_operacional">
+                                <option>Ativo</option><option>Em Férias</option><option>Afastado</option><option>Desligado</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Acesso ao sistema</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field"><label for="fn_criar_acesso">Criar acesso (PC ou app)</label>
+                            <select id="fn_criar_acesso">
+                                <option value="true">Sim — gera login do colaborador</option>
+                                <option value="false">Não</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="fn_perfil">Perfil de acesso</label>
+                            <select id="fn_perfil">
+                                <option value="Motorista">Motorista (aplicativo)</option>
+                                <option value="Ajudante">Ajudante (aplicativo)</option>
+                                <option value="Operacional">Operacional (PC)</option>
+                                <option value="Gestor">Gestor (PC)</option>
+                                <option value="Admin">Admin (PC)</option>
+                                <option value="TI">TI (PC)</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="fn_email_acesso">E-mail de acesso</label><input id="fn_email_acesso" type="email"></div>
+                        <div class="fn-field"><label for="fn_senha">Senha inicial</label><input id="fn_senha" type="password" placeholder="Mínimo 8 caracteres"></div>
+                    </div>
+                </div>
+
+                <div class="fn-actions">
+                    <button type="button" class="btn" id="btnCancelarFuncionario2">Cancelar</button>
+                    <button type="submit" class="btn btn--primary">Salvar colaborador</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- ══════════════════════════════════════════
+             ABA: EQUIPES 
+        ══════════════════════════════════════════ -->
+        <section id="tab-equipes" class="tab-content" role="tabpanel" aria-labelledby="tab-equipes">
+            <div class="card-toolbar">
+                <h2>👥 Gestão de Equipes</h2>
+                <div class="toolbar-actions">
+                    <input type="text" id="searchEquipes" class="search-input" placeholder="Pesquisar equipe..." aria-label="Pesquisar equipes">
+                    <button class="btn btn--primary" id="btnNewEquipe">+ Nova Equipe</button>
+                </div>
+            </div>
+            <table class="data-table" aria-label="Tabela de equipes">
+                <thead>
+                    <tr>
+                        <th>Nome da Equipe</th>
+                        <th>Motorista Principal</th>
+                        <th>Membros / Ajudantes</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tableEquipesBody">
+                    <!-- Renderizado via JS -->
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ══════════════════════════════════════════
+             ABA: ESTOQUE
+        ══════════════════════════════════════════ -->
+        <section id="tab-estoque" class="tab-content" role="tabpanel" aria-labelledby="tab-estoque">
+            <div class="card-toolbar">
+                <h2>📦 Estoque — Operação Logística</h2>
+                <div class="toolbar-actions">
+                    <input type="text" id="searchEstoque" class="search-input" placeholder="Pesquisar item..." aria-label="Pesquisar estoque">
+                    <button class="btn btn--primary" id="btnNewEstoque">+ Novo Item</button>
+                </div>
+            </div>
+            <table class="data-table" aria-label="Tabela de estoque">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Descrição do Item</th>
+                        <th>Dimensões (AxLxP)</th>
+                        <th>Quantidade</th>
+                        <th>Unidade</th>
+                        <th>Localização</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tableEstoqueBody">
+                    <!-- Renderizado via JS -->
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ══════════════════════════════════════════
+             ABA: VEÍCULOS
+        ══════════════════════════════════════════ -->
+        <section id="tab-veiculos" class="tab-content" role="tabpanel" aria-labelledby="tab-veiculos">
+            <div id="veiculoConsulta" class="vei-consulta">
+                <div class="fn-head">
+                    <div>
+                        <h2>437 — Cadastro de Veículos</h2>
+                        <p class="fn-crumb">Consulta de veículos da frota</p>
+                    </div>
+                    <div class="vei-acoes">
+                        <button type="button" class="vei-btn vei-btn--qr" id="btnQrVeiculo" data-icon="qr">QR Code</button>
+                        <button type="button" class="vei-btn vei-btn--incluir" id="btnNewVeiculo" data-icon="plus">Incluir</button>
+                        <button type="button" class="vei-btn vei-btn--excel" id="btnExcelVeiculo" data-icon="sheet">Excel</button>
+                        <button type="button" class="vei-btn vei-btn--status" id="btnStatusVeiculo" data-icon="refresh">Status</button>
+                    </div>
+                </div>
+                <div class="vei-top">
+                    <div class="vei-filtros" id="veiculoFiltros">
+                        <div>
+                            <label for="vf_campo">Pesquisar</label>
+                            <select id="vf_campo">
+                                <option value="placa">Placa</option>
+                                <option value="marca">Marca</option>
+                                <option value="modelo">Modelo</option>
+                                <option value="cor">Cor</option>
+                                <option value="chassi">Chassi</option>
+                                <option value="renavam">Renavam</option>
+                            </select>
+                            <input id="vf_texto" placeholder="" style="margin-top:6px;">
+                        </div>
+                        <div>
+                            <label for="vf_tipo_prop">Tipo Prop.</label>
+                            <select id="vf_tipo_prop">
+                                <option value="">Indiferente</option>
+                                <option>Proprio</option>
+                                <option>Terceiro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="vf_unidade">Unidade</label>
+                            <select id="vf_unidade">
+                                <option value="">TODAS</option>
+                                <option>UNIDADE III</option>
+                                <option>CIA DE TRANSPORTE</option>
+                                <option>HOLDING PACHECO</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="vf_categoria">Categoria da Frota</label>
+                            <select id="vf_categoria">
+                                <option value="">TODAS</option>
+                                <option>PROPRIA</option>
+                                <option>TERCEIRO</option>
+                                <option>AGREGADO</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="vf_status">Status</label>
+                            <select id="vf_status">
+                                <option value="ATIVO">ATIVO</option>
+                                <option value="INATIVO">INATIVO</option>
+                                <option value="">TODOS</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="vf_carroceria">Tipo de Carroceria</label>
+                            <select id="vf_carroceria">
+                                <option value="">Todos</option>
+                                <option>Não Aplicável</option>
+                                <option>BAU</option>
+                                <option>SIDER</option>
+                                <option>GRANELEIRO</option>
+                                <option>CACAMBA</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="vf_rodado">Tipo de Rodado</label>
+                            <select id="vf_rodado">
+                                <option value="">Todos</option>
+                                <option>Nao aplicavel</option>
+                                <option>SIMPLES</option>
+                                <option>DUPLO</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="vf_uf">UF</label>
+                            <select id="vf_uf">
+                                <option value="">TODOS</option>
+                                <option>AC</option><option>AL</option><option>AM</option><option>AP</option>
+                                <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+                                <option>GO</option><option>MA</option><option>MG</option><option>MS</option>
+                                <option>MT</option><option>PA</option><option>PB</option><option>PE</option>
+                                <option>PI</option><option>PR</option><option>RJ</option><option>RN</option>
+                                <option>RO</option><option>RR</option><option>RS</option><option>SC</option>
+                                <option>SE</option><option>SP</option><option>TO</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="vf_rastreador">Rastreador</label>
+                            <select id="vf_rastreador">
+                                <option value="">TODOS</option>
+                                <option>(Sem Rastreador)</option>
+                                <option>SASCAR</option>
+                                <option>ONIXSAT</option>
+                                <option>AUTOTRAC</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>&nbsp;</label>
+                            <button type="button" class="btn btn--primary" id="btnPesquisarVeiculo" style="width:100%;" data-icon="search">Pesquisar</button>
+                        </div>
+                    </div>
+                </div>
+                <table class="data-table" aria-label="Tabela de veículos">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>COD</th>
+                            <th>PLACA</th>
+                            <th>MARCA</th>
+                            <th>MODELO</th>
+                            <th>COR</th>
+                            <th>STATUS</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableVeiculosBody"></tbody>
+                </table>
+            </div>
+
+            <form id="veiculoForm" class="fn-form" autocomplete="off">
+                <div class="fn-head">
+                    <div>
+                        <h2 id="veiTitulo">Veículo &gt; Incluir novo</h2>
+                        <p class="fn-crumb">Consulta de veículo</p>
+                    </div>
+                    <div class="fn-actions">
+                        <button type="button" class="btn" id="btnCancelarVeiculo">Voltar à consulta</button>
+                        <button type="submit" class="btn btn--primary">Salvar</button>
+                    </div>
+                </div>
+                <input type="hidden" id="vei_id">
+
+                <div class="fn-sec">
+                    <h3>Consulta de veículo</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field"><label for="vei_placa">Placa</label><input id="vei_placa" required></div>
+                        <div class="fn-field"><label for="vei_ano">Ano fabricação</label><input id="vei_ano" type="number"></div>
+                        <div class="fn-field"><label for="vei_ano_modelo">Ano modelo</label><input id="vei_ano_modelo" type="number"></div>
+                        <div class="fn-field"><label for="vei_renavam">Renavam</label><input id="vei_renavam"></div>
+                        <div class="fn-field"><label for="vei_cor">Cor</label><input id="vei_cor"></div>
+                        <div class="fn-field"><label for="vei_marca">Marca</label><input id="vei_marca"></div>
+                        <div class="fn-field"><label for="vei_data_compra">Data de compra</label><input id="vei_data_compra" type="date"></div>
+                        <div class="fn-field"><label for="vei_modelo">Modelo</label><input id="vei_modelo" required></div>
+                        <div class="fn-field"><label for="vei_tara">Tara veículo</label><input id="vei_tara" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="vei_capacidade_peso_kg">Capacidade de carga</label><input id="vei_capacidade_peso_kg" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="vei_capacidade_volume_m3">Capacidade de carga em M3</label><input id="vei_capacidade_volume_m3" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="vei_tipo_carroceria">Tipo de carroceria</label>
+                            <select id="vei_tipo_carroceria">
+                                <option>Não Aplicável</option>
+                                <option>BAU</option>
+                                <option>SIDER</option>
+                                <option>GRANELEIRO</option>
+                                <option>CACAMBA</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_cidade_emplacada">Cidade emplacada</label><input id="vei_cidade_emplacada"></div>
+                        <div class="fn-field"><label for="vei_uf_emplacada">UF emplacada</label>
+                            <select id="vei_uf_emplacada">
+                                <option value="">SELECIONE</option>
+                                <option>AC</option><option>AL</option><option>AM</option><option>AP</option>
+                                <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+                                <option>GO</option><option>MA</option><option>MG</option><option>MS</option>
+                                <option>MT</option><option>PA</option><option>PB</option><option>PE</option>
+                                <option>PI</option><option>PR</option><option>RJ</option><option>RN</option>
+                                <option>RO</option><option>RR</option><option>RS</option><option>SC</option>
+                                <option>SE</option><option>SP</option><option>TO</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_tipo_rodado">Tipo de rodado</label>
+                            <select id="vei_tipo_rodado">
+                                <option>Nao aplicavel</option>
+                                <option>SIMPLES</option>
+                                <option>DUPLO</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_certificado_cronotacografo">Certificado cronotacógrafo</label><input id="vei_certificado_cronotacografo"></div>
+                        <div class="fn-field"><label for="vei_medidas_rodado">Medidas rodado</label><input id="vei_medidas_rodado"></div>
+                        <div class="fn-field"><label for="vei_consumo_km_litro">Consumo KM/Litro</label><input id="vei_consumo_km_litro" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="vei_km_maximo_rota">KM máximo por rota</label><input id="vei_km_maximo_rota" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="vei_capacidade_tanque_litros">Capacidade do tanque em litros</label><input id="vei_capacidade_tanque_litros" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="vei_base_operacao">Base de operação</label>
+                            <select id="vei_base_operacao">
+                                <option>UNIDADE III</option>
+                                <option>CIA DE TRANSPORTE</option>
+                                <option>HOLDING PACHECO</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_tipo_veiculo">Tipo veículo</label>
+                            <select id="vei_tipo_veiculo">
+                                <option value="">Selecione..</option>
+                                <option>TRUCK</option>
+                                <option>TOCO</option>
+                                <option>VUC</option>
+                                <option>CARRETA</option>
+                                <option>FURGAO</option>
+                                <option>UTILITARIO</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_categoria_frota">Categoria frota</label>
+                            <select id="vei_categoria_frota">
+                                <option value="">Selecione..</option>
+                                <option>PROPRIA</option>
+                                <option>TERCEIRO</option>
+                                <option>AGREGADO</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Seguro, rastreador e documentos</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field"><label for="vei_seguradora">Seguradora</label>
+                            <select id="vei_seguradora">
+                                <option>SEM SEGURO</option>
+                                <option>PORTO SEGURO</option>
+                                <option>MAPFRE</option>
+                                <option>BRADESCO SEGUROS</option>
+                                <option>TOKIO MARINE</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_vigencia">Vigência</label><input id="vei_vigencia" type="date"></div>
+                        <div class="fn-field"><label for="vei_gerenciadora">Gerenciadora</label><input id="vei_gerenciadora"></div>
+                        <div class="fn-field"><label for="vei_id_rastreador">ID rastreador</label><input id="vei_id_rastreador"></div>
+                        <div class="fn-field"><label for="vei_codigo_analise_gerenciadora">Código de análise gerenciadora</label><input id="vei_codigo_analise_gerenciadora"></div>
+                        <div class="fn-field"><label for="vei_rastreador">Rastreador</label>
+                            <select id="vei_rastreador">
+                                <option>(Sem Rastreador)</option>
+                                <option>SASCAR</option>
+                                <option>ONIXSAT</option>
+                                <option>AUTOTRAC</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_status_seguradora">Status na seguradora</label>
+                            <select id="vei_status_seguradora">
+                                <option>Nao cadastrado</option>
+                                <option>Cadastrado</option>
+                                <option>Pendente</option>
+                                <option>Vencido</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_validade_seguradora">Validade</label><input id="vei_validade_seguradora" type="date"></div>
+                        <div class="fn-field"><label for="vei_antt">ANTT</label><input id="vei_antt"></div>
+                        <div class="fn-field"><label for="vei_data_venda">Data de venda</label><input id="vei_data_venda" type="date"></div>
+                        <div class="fn-field"><label for="vei_validade_antt">Validade ANTT</label><input id="vei_validade_antt" type="date"></div>
+                        <div class="fn-field"><label for="vei_travas_portas_bau">Travas de portas e baú</label><input id="vei_travas_portas_bau" type="number" value="0"></div>
+                        <div class="fn-field"><label for="vei_chassi">Chassi</label><input id="vei_chassi"></div>
+                        <div class="fn-field"><label for="vei_validade_licenciamento">Validade licenciamento</label><input id="vei_validade_licenciamento" type="date"></div>
+                        <div class="fn-field"><label for="vei_eixos">Eixos</label><input id="vei_eixos" type="number"></div>
+                        <div class="fn-field"><label for="vei_vencimento_ipva">Vencimento IPVA</label><input id="vei_vencimento_ipva" type="date"></div>
+                        <div class="fn-field"><label for="vei_valor_licenciamento">Valor licenciamento</label><input id="vei_valor_licenciamento" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="vei_validade_checklist">Validade checklist</label><input id="vei_validade_checklist" type="date"></div>
+                        <div class="fn-field"><label for="vei_status_operacional">Status operacional</label>
+                            <select id="vei_status_operacional">
+                                <option>Disponível</option>
+                                <option>Em Rota</option>
+                                <option>Em Manutenção</option>
+                                <option>Inativo</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Propriedade</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field"><label for="vei_tipo_responsavel">Tipo de responsável</label>
+                            <select id="vei_tipo_responsavel">
+                                <option>Proprio</option>
+                                <option>Terceiro</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_unidade_proprietaria">Unidade proprietária</label>
+                            <select id="vei_unidade_proprietaria">
+                                <option>UNIDADE III</option>
+                                <option>CIA DE TRANSPORTE</option>
+                                <option>HOLDING PACHECO</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_tipo_proprietario">Tipo de proprietário</label>
+                            <select id="vei_tipo_proprietario">
+                                <option>Proprio</option>
+                                <option>Terceiro</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_financiamento">Financiamento</label>
+                            <select id="vei_financiamento">
+                                <option>Nenhum</option>
+                                <option>FINAME</option>
+                                <option>LEASING</option>
+                                <option>CDC</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_instituicao_financeira">Instituição financeira</label><input id="vei_instituicao_financeira"></div>
+                        <div class="fn-field"><label for="vei_tipo">Tipo</label>
+                            <select id="vei_tipo">
+                                <option value="">Selecione</option>
+                                <option>CAVALO</option>
+                                <option>CARRETA</option>
+                                <option>TRUCK</option>
+                                <option>VUC</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_motorista">Motorista</label><select id="vei_motorista"></select></div>
+                        <div class="fn-field"><label for="vei_equipe">Equipe</label><select id="vei_equipe"></select></div>
+                    </div>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Custos e tabela</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field"><label for="vei_tabela">Tabela</label>
+                            <select id="vei_tabela">
+                                <option>NAO APLICAVEL</option>
+                                <option>PROPRIA</option>
+                                <option>TERCEIRO</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_valor_por_entrega">Valor por entrega</label><input id="vei_valor_por_entrega" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="vei_primeira_do_dia_diferente">Primeira do dia diferente</label>
+                            <select id="vei_primeira_do_dia_diferente">
+                                <option value="false">Não</option>
+                                <option value="true">Sim</option>
+                            </select>
+                        </div>
+                        <div class="fn-field"><label for="vei_valor_por_km">Valor por km rodado</label><input id="vei_valor_por_km" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="vei_percentual_frete">% sobre o total do frete</label><input id="vei_percentual_frete" type="number" step="0.01"></div>
+                        <div class="fn-field"><label for="vei_valor_por_diaria">Valor por diária</label><input id="vei_valor_por_diaria" type="number" step="0.01"></div>
+                    </div>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Itens adicionais</h3>
+                    <div class="vei-check" id="veiItensAdicionais">
+                        <label><input type="checkbox" value="TRAVA BAU TRASEIRO"> TRAVA BAÚ TRASEIRO</label>
+                        <label><input type="checkbox" value="TRAVA BAU LATERAL"> TRAVA BAÚ LATERAL</label>
+                        <label><input type="checkbox" value="SENSOR DE BAU TRASEIRO"> SENSOR DE BAÚ TRASEIRO</label>
+                        <label><input type="checkbox" value="SENSOR DE BAU LATERAL"> SENSOR DE BAÚ LATERAL</label>
+                        <label><input type="checkbox" value="TECLADO"> TECLADO</label>
+                        <label><input type="checkbox" value="SENSOR DE VIOLACAO PAINEL"> SENSOR DE VIOLAÇÃO PAINEL</label>
+                        <label><input type="checkbox" value="SENSOR DE PORTA DIANTEIRA ESQUERDA"> SENSOR DE PORTA DIANTEIRA ESQUERDA</label>
+                        <label><input type="checkbox" value="SENSOR DE PORTA DIANTEIRA DIREITA"> SENSOR DE PORTA DIANTEIRA DIREITA</label>
+                        <label><input type="checkbox" value="SENSOR DE JANELA"> SENSOR DE JANELA</label>
+                    </div>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Anexos gerais</h3>
+                    <table class="fn-dep-table">
+                        <thead>
+                            <tr><th>Anexo</th><th>Tipo</th><th>Excluir</th></tr>
+                        </thead>
+                        <tbody id="veiAnexosBody"></tbody>
+                    </table>
+                    <button type="button" class="btn" id="btnAddAnexoVeiculo" style="margin-top:8px;">+ Adicionar anexo</button>
+                </div>
+
+                <div class="fn-sec">
+                    <h3>Observações</h3>
+                    <div class="fn-grid">
+                        <div class="fn-field span-4"><label for="vei_observacao">Observação</label><textarea id="vei_observacao" rows="2"></textarea></div>
+                    </div>
+                </div>
+
+                <div class="fn-actions">
+                    <button type="button" class="btn" id="btnCancelarVeiculo2">Cancelar</button>
+                    <button type="submit" class="btn btn--primary">Salvar</button>
+                </div>
+            </form>
+        </section>
+
+    </main>
+</div>
+
+<script type="module" src="../js/modules/cadastros.js?v=11"></script>
+</body>
+</html>

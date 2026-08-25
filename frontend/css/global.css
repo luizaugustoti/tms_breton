@@ -1,0 +1,230 @@
+/* frontend/css/global.css */
+@import url('./icons.css');
+
+:root {
+    /* Identidade Breton (Cores extraídas da logo) */
+    --color-primary: #6B2335; /* Vinho/Burgundy do fundo da logo */
+    --color-secondary: #4A1723; /* Tom mais escuro do vinho para interações (hover) */
+    --color-accent: #A38068; /* Dourado/Bronze do texto 'DUBAI' */
+    
+    /* Cores de Superfície e Fundo */
+    --color-background: #F9F7F7; /* Off-white muito sutil para não cansar a vista */
+    --color-surface: #FFFFFF; /* Branco puro para os cards */
+    
+    /* Tipografia */
+    --color-text-main: #333333;
+    --color-text-light: #7A7A7A;
+    --color-error: #D32F2F;
+
+    /* Espaçamentos e Tipografia */
+    --font-main: 'Montserrat', sans-serif;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --border-radius: 4px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--color-background);
+    color: var(--color-text-main);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Componentes Genéricos */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--border-radius);
+    font-family: var(--font-main);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn--primary {
+    background-color: var(--color-primary);
+    color: var(--color-surface);
+}
+
+.btn--primary:hover {
+    background-color: var(--color-secondary);
+}
+
+.form-group {
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+}
+
+.form-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text-main);
+}
+
+.form-input {
+    padding: 12px;
+    border: 1px solid #E0E0E0;
+    border-radius: var(--border-radius);
+    font-family: var(--font-main);
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--color-accent); /* Destaque dourado ao focar no input */
+}
+
+.form-error {
+    color: var(--color-error);
+    font-size: 0.75rem;
+    margin-top: 4px;
+    min-height: 14px;
+}
+
+/* Responsividade global: drawer, layout e componentes */
+body {
+    min-width: 320px;
+    overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas,
+iframe,
+object,
+embed {
+    max-width: 100%;
+    height: auto;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+.sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(12, 12, 12, 0.42);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    z-index: 998;
+}
+
+body.sidebar-open .sidebar-backdrop {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.sidebar-toggle {
+    position: fixed;
+    top: 10px;
+    right: 12px;
+    left: auto;
+    z-index: 1001;
+    width: 44px;
+    height: 44px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.96);
+    color: var(--color-primary);
+    font-size: 1.4rem;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-toggle.is-active {
+    background: var(--color-primary);
+    color: var(--color-surface);
+}
+
+@media (max-width: 920px) {
+    .sidebar-toggle {
+        display: inline-flex;
+    }
+
+    body.sidebar-open {
+        overflow: hidden;
+    }
+
+    .main-content {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    .header,
+    .card-header,
+    .tabs-nav,
+    .shortcuts__grid,
+    .toolbar,
+    .filter-row {
+        flex-wrap: wrap;
+    }
+}
+
+@media (min-width: 921px) {
+    .sidebar-toggle,
+    .sidebar-backdrop {
+        display: none !important;
+    }
+
+    .sidebar {
+        transform: none !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .btn,
+    .form-input,
+    select,
+    textarea {
+        min-height: 44px;
+        width: 100%;
+    }
+
+    .card-header,
+    .toolbar,
+    .filter-row,
+    .search-row {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .data-table-container,
+    .table-wrapper,
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .data-table {
+        min-width: 640px;
+    }
+}

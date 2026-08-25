@@ -1,0 +1,43 @@
+.simulacao-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-md);
+}
+
+.scenario-card {
+    background-color: var(--color-background);
+    border: 1px solid #E0E0E0;
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.scenario-card--featured {
+    border: 2px solid var(--color-accent);
+    background-color: var(--color-surface);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.scenario-card h3 {
+    font-size: 1.1rem;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.scenario-price {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+.scenario-card ul {
+    list-style: none;
+    font-size: 0.85rem;
+    color: var(--color-text-main);
+}
+
+.scenario-card ul li {
+    margin-bottom: var(--spacing-sm);
+}

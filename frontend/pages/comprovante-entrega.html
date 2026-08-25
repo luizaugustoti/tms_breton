@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TMS Breton - Comprovante de Entrega & Satisfação</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/comprovante-entrega.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="driver-body">
+    <div class="driver-container">
+        <!-- Cabeçalho do App de Entrega -->
+        <header class="driver-header">
+            <div class="driver-header__brand">
+                <span class="driver-header__logo">BRETON</span>
+                <span class="driver-header__badge">App Entregador</span>
+            </div>
+            <div class="driver-header__order-info">
+                <span class="order-code" id="orderCode">Pedido: PED-8801</span>
+                <span class="order-client" id="orderClient">Cliente: Loja Gabriel Monteiro</span>
+            </div>
+        </header>
+
+        <main class="driver-content">
+            <!-- Card de Detalhes do Item -->
+            <section class="card-driver">
+                <h3 class="card-driver__title">📦 Detalhes da Carga</h3>
+                <div class="item-details">
+                    <p><strong>Produto:</strong> Sofá Orgânico Customizado - Couro Off-White</p>
+                    <p><strong>Endereço:</strong> Alameda Gabriel Monteiro da Silva, 1420 - SP</p>
+                    <p><strong>Equipe / Veículo:</strong> VUC Premium (XYZ-9E87)</p>
+                </div>
+            </section>
+
+            <!-- Form de Confirmação & Satisfação -->
+            <form id="formComprovante" class="driver-form">
+                
+                <!-- Checklist de Entrega -->
+                <section class="card-driver">
+                    <h3 class="card-driver__title">✅ Checklist de Entrega Premium</h3>
+                    <div class="checklist">
+                        <label class="check-item">
+                            <input type="checkbox" id="chkIntegridade" checked required>
+                            <span>Produto inspecionado e sem avarias</span>
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" id="chkLimpeza" checked>
+                            <span>Embalagens recolhidas e local limpo</span>
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" id="chkMontagem" checked>
+                            <span>Montagem/Posicionamento concluído</span>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Avaliação do Cliente (Rating) -->
+                <section class="card-driver">
+                    <h3 class="card-driver__title">⭐ Avaliação do Cliente</h3>
+                    <p class="rating-instruction">Como foi sua experiência com a entrega e montagem Breton?</p>
+                    
+                    <div class="star-rating" id="starRating">
+                        <span class="star" data-value="1">&#9733;</span>
+                        <span class="star" data-value="2">&#9733;</span>
+                        <span class="star" data-value="3">&#9733;</span>
+                        <span class="star" data-value="4">&#9733;</span>
+                        <span class="star active" data-value="5">&#9733;</span>
+                    </div>
+                    <input type="hidden" id="inputRating" value="5">
+
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="txtObservacao">Observações / Depoimento do Cliente:</label>
+                        <textarea id="txtObservacao" rows="3" placeholder="Escreva aqui o depoimento ou feedback do cliente..."></textarea>
+                    </div>
+                </section>
+
+                <!-- Dados do Recebedor e Assinatura Digital -->
+                <section class="card-driver">
+                    <h3 class="card-driver__title">✍️ Assinatura Digital do Recebedor</h3>
+                    
+                    <div class="form-group">
+                        <label for="nomeRecebedor">Nome Completo do Recebedor *</label>
+                        <input type="text" id="nomeRecebedor" required placeholder="Ex: Maria Alice Silva">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="docRecebedor">Documento (CPF / RG) *</label>
+                        <input type="text" id="docRecebedor" required placeholder="000.000.000-00">
+                    </div>
+
+                    <!-- Canvas de Assinatura Touch -->
+                    <div class="signature-block">
+                        <label>Assine no quadro abaixo:</label>
+                        <div class="canvas-wrapper">
+                            <canvas id="signatureCanvas"></canvas>
+                            <span class="canvas-placeholder">Assine aqui</span>
+                        </div>
+                        <button type="button" class="btn-clear-signature" id="btnClearSignature">🧹 Limpar Assinatura</button>
+                    </div>
+                </section>
+
+                <!-- Botão de Envio -->
+                <button type="submit" class="btn-submit-delivery" id="btnSubmitDelivery">
+                    🚀 Finalizar Entrega & Confirmar POD
+                </button>
+            </form>
+        </main>
+
+        <!-- Modal de Sucesso -->
+        <div id="modalSucesso" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-icon">🎉</div>
+                <h2>Entrega Finalizada!</h2>
+                <p>Comprovante assinado e avaliação de satisfação registrados com sucesso na Torre de Controle.</p>
+                <button class="btn-modal-close" onclick="window.location.reload()">Nova Entrega</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="../js/modules/comprovante-entrega.js"></script>
+</body>
+</html>

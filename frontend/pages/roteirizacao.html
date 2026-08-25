@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TMS Breton — Manifestar</title>
+    <meta name="description" content="Quadro Kanban de roteirização da frota Breton — vincule pedidos a veículos com drag and drop.">
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/cadastros.css">
+    <link rel="stylesheet" href="../css/modal.css">
+    <link rel="stylesheet" href="../css/manifesto.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- SortableJS — drag & drop leve, sem dependências -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
+    <style>
+        /* ══════════════════════════════════════════
+           LAYOUT KANBAN
+        ══════════════════════════════════════════ */
+        .kanban-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .kanban-header h1 { margin: 0; }
+        .kanban-header p  { margin: 4px 0 0; color: #888; font-size: .875rem; }
+
+        .kanban-toolbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* Scroll horizontal do board */
+        .kanban-board {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding-bottom: 24px;
+            align-items: flex-start;
+            min-height: calc(100vh - 220px);
+        }
+        .kanban-board::-webkit-scrollbar { height: 6px; }
+        .kanban-board::-webkit-scrollbar-track { background: #f5ede6; border-radius: 4px; }
+        .kanban-board::-webkit-scrollbar-thumb { background: #C5A059; border-radius: 4px; }
+
+        /* ══════════════════════════════════════════
+           COLUNAS
+        ══════════════════════════════════════════ */
+        .kanban-col {
+            flex: 0 0 290px;
+            min-width: 290px;
+            background: #faf6f1;
+            border-radius: 12px;
+            border: 1px solid #e8ddd5;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 200px);
+        }
+
+        .kanban-col--backlog  .col-header { background: linear-gradient(135deg, #5A1827, #7a2035); }
+        .kanban-col--done     .col-header { background: linear-gradient(135deg, #2d6a4f, #40916c); }
+        .kanban-col--vehicle  .col-header { background: linear-gradient(135deg, #1a3a5c, #2d6a9f); }
+
+        .col-header {
+            padding: 14px 16px;
+            border-radius: 10px 10px 0 0;
+            color: #fff;
+        }
+        .col-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .col-title {
+            font-size: .9rem;
+            font-weight: 700;
+            letter-spacing: .3px;
+        }
+        .col-badge {
+            background: rgba(255,255,255,.25);
+            color: #fff;
+            border-radius: 20px;
+            padding: 2px 10px;
+            font-size: .75rem;
+            font-weight: 700;
+            min-width: 26px;
+            text-align: center;
+        }
+        .col-subtitle {
+            font-size: .72rem;
+            opacity: .8;
+            margin-top: 4px;
+        }
+
+        /* Drop zone */
+        .kanban-list {
+            padding: 10px 10px 4px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 80px;
+        }
+        .kanban-list::-webkit-scrollbar { width: 4px; }
+        .kanban-list::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+        /* Highlight quando item está sobre a coluna */
+        .kanban-list.drag-over {
+            background: rgba(197,160,89,.1);
+            border-radius: 8px;
+            outline: 2px dashed #C5A059;
+        }
+
+        /* Empty state da coluna */
+        .col-empty {
+            text-align: center;
+            padding: 24px 12px;
+            color: #bbb;
+            font-size: .8rem;
+            pointer-events: none;
+            user-select: none;
+        }
+        .col-empty-icon { font-size: 1.6rem; display: block; margin-bottom: 8px; }
+
+        /* ══════════════════════════════════════════
+           CARDS DE PEDIDO
+        ══════════════════════════════════════════ */
+        .kanban-card {
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #ede5dc;
+            padding: 12px 14px;
+            margin-bottom: 9px;
+            cursor: grab;
+            transition: box-shadow .15s, transform .15s;
+            position: relative;
+            user-select: none;
+        }
+        .kanban-card:hover {
+            box-shadow: 0 6px 20px rgba(90,24,39,.12);
+            transform: translateY(-1px);
+        }
+        .kanban-card:active { cursor: grabbing; }
+
+        /* Borda lateral colorida por prioridade */
+        .kanban-card::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 4px;
+            border-radius: 10px 0 0 10px;
+            background: #C5A059;
+        }
+        .kanban-card.priority-high::before  { background: #e74c3c; }
+        .kanban-card.priority-med::before   { background: #f39c12; }
+        .kanban-card.priority-low::before   { background: #27ae60; }
+
+        .card-number {
+            font-size: .72rem;
+            font-weight: 700;
+            color: #5A1827;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+        }
+        .card-client {
+            font-size: .85rem;
+            font-weight: 600;
+            color: #222;
+            margin: 4px 0 2px;
+            line-height: 1.3;
+        }
+        .card-address {
+            font-size: .75rem;
+            color: #888;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+        .card-meta {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .card-tag {
+            font-size: .68rem;
+            padding: 2px 7px;
+            border-radius: 20px;
+            font-weight: 600;
+            background: #f5ede6;
+            color: #7a4020;
+        }
+        .card-tag--date { background: rgba(90,24,39,.08); color: #5A1827; }
+        .card-tag--vol  { background: rgba(197,160,89,.15); color: #8a6010; }
+
+        /* Sortable ghost/drag classes */
+        .sortable-ghost {
+            opacity: .35;
+            background: #e8f4fd !important;
+            border: 2px dashed #4a90d9 !important;
+        }
+        .sortable-drag {
+            box-shadow: 0 12px 32px rgba(0,0,0,.22) !important;
+            transform: rotate(1.5deg) scale(1.03) !important;
+            cursor: grabbing !important;
+        }
+        .sortable-chosen { opacity: .7; }
+
+        /* ══════════════════════════════════════════
+           SKELETON LOADER
+        ══════════════════════════════════════════ */
+        .skeleton-col {
+            flex: 0 0 290px;
+            min-width: 290px;
+        }
+        .skeleton-header {
+            height: 64px;
+            background: linear-gradient(90deg, #e8e0d8 25%, #f5ede6 50%, #e8e0d8 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: 10px 10px 0 0;
+        }
+        .skeleton-card {
+            height: 90px;
+            margin: 10px;
+            background: linear-gradient(90deg, #f0ece8 25%, #faf6f1 50%, #f0ece8 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: 8px;
+        }
+        @keyframes shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ══════════════════════════════════════════
+           STATS BAR
+        ══════════════════════════════════════════ */
+        .stats-bar {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .stat-pill {
+            background: #fff;
+            border: 1px solid #e8ddd5;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: .8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .stat-pill strong { font-weight: 700; color: #5A1827; }
+
+        /* ══════════════════════════════════════════
+           LOADING OVERLAY
+        ══════════════════════════════════════════ */
+        #kanbanLoadingOverlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(250,246,241,.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            border-radius: 12px;
+            flex-direction: column;
+            gap: 10px;
+            font-size: .875rem;
+            color: #5A1827;
+            font-weight: 600;
+        }
+        .spin {
+            width: 36px; height: 36px;
+            border: 4px solid #e8ddd5;
+            border-top-color: #C5A059;
+            border-radius: 50%;
+            animation: spin .8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ══════════════════════════════════════════
+           RESPONSIVE
+        ══════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            .kanban-col { flex: 0 0 260px; min-width: 260px; }
+        }
+    </style>
+</head>
+<body class="dashboard-body">
+<div class="layout">
+
+    <!-- ═══ Sidebar ═══ -->
+    <aside class="sidebar">
+        <div class="sidebar__brand">
+            <h2 class="sidebar__title">BRETON</h2>
+            <span class="sidebar__subtitle">TMS Operations</span>
+        </div>
+                <nav class="sidebar__nav">
+            <a href="dashboard.html"       class="sidebar__link"><span class="sidebar__icon">📊</span> Dashboard</a>
+            <a href="cadastros.html"       class="sidebar__link"><span class="sidebar__icon">📁</span> Cadastros</a>
+            <a href="estoque.html"         class="sidebar__link"><span class="sidebar__icon">🏭</span> Estoque</a>
+            <a href="pedidos.html"         class="sidebar__link sidebar__link--active"><span class="sidebar__icon">📦</span> Operacional</a>
+            <a href="painel-motorista.html" class="sidebar__link"><span class="sidebar__icon">📱</span> Painel do Motorista</a>
+            <a href="indicadores.html"     class="sidebar__link"><span class="sidebar__icon">📈</span> Indicadores</a>
+            <a href="satisfacao.html"      class="sidebar__link"><span class="sidebar__icon">⭐</span> Satisfação</a>
+            <a href="administracao.html"   class="sidebar__link"><span class="sidebar__icon">⚙️</span> Administração</a>
+        </nav>
+        <div class="sidebar__footer">
+            <a href="../index.html" class="sidebar__logout" id="btnLogout">Sair do Sistema</a>
+        </div>
+    </aside>
+
+    <!-- ═══ Main Content ═══ -->
+    <main class="main-content" id="manifestarMain" style="overflow: auto; display: flex; flex-direction: column;">
+
+        <section id="view-propria" class="mf-page">
+            <h1 class="mf-title" id="pageTitle">189 - Manifestos &gt; Motorista / Rota</h1>
+            <p id="pageSubtitle" class="mf-hidden">Listagem de manifestos da frota própria</p>
+
+            <div id="mfLista">
+            <form class="mf-filters" id="mfFiltros" autocomplete="off">
+                <div class="mf-filters__row mf-filters__row--1">
+                    <div class="mf-field">
+                        <label>Manifesto</label>
+                        <select id="mfManifesto"><option value="">TODOS</option></select>
+                    </div>
+                    <div class="mf-field">
+                        <label>Situação manifesto</label>
+                        <select id="mfSituacao">
+                            <option value="">TODOS</option>
+                            <option value="PLANEJADA">PLANEJADA</option>
+                            <option value="EM_ANDAMENTO">EM ANDAMENTO</option>
+                            <option value="CONCLUIDA">CONCLUÍDA</option>
+                            <option value="CANCELADA">CANCELADA</option>
+                        </select>
+                    </div>
+                    <div class="mf-field">
+                        <label>Motorista</label>
+                        <input id="mfMotorista" type="text" placeholder="">
+                    </div>
+                    <div class="mf-field">
+                        <label>Unidade</label>
+                        <select id="mfUnidade">
+                            <option value="">TODAS</option>
+                            <option>HOLDING PACHECO</option>
+                            <option>BRETON TMS</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mf-filters__row mf-filters__row--2">
+                    <div class="mf-field">
+                        <label>Tipo de data</label>
+                        <select id="mfTipoData">
+                            <option value="EMISSAO">EMISSÃO</option>
+                            <option value="ROTA">ROTA</option>
+                        </select>
+                    </div>
+                    <div class="mf-field">
+                        <label>Data Inicial</label>
+                        <input id="mfDataIni" type="date">
+                    </div>
+                    <div class="mf-field">
+                        <label>Data Final</label>
+                        <input id="mfDataFim" type="date">
+                    </div>
+                    <div class="mf-field">
+                        <label>Status MDF-e</label>
+                        <select id="mfStatusMdfe">
+                            <option value="">TODOS</option>
+                            <option value="NAO_EMITIDO">NÃO EMITIDO</option>
+                            <option value="AUTORIZADO">AUTORIZADO</option>
+                            <option value="CANCELADO">CANCELADO</option>
+                        </select>
+                    </div>
+                    <div class="mf-field">
+                        <label>Rota</label>
+                        <select id="mfRota"><option value="">TODAS</option></select>
+                    </div>
+                    <button type="submit" class="mf-btn" id="btnPesquisarManifestos">PESQUISAR</button>
+                </div>
+            </form>
+
+            <div class="mf-actions">
+                <button type="button" class="mf-btn" id="btnIncluirManifesto" data-icon="plus">Incluir</button>
+                <button type="button" class="mf-btn" id="btnImprimirManifestos" data-icon="print">Imprimir</button>
+                <button type="button" class="mf-btn" id="btnExcelManifestos" data-icon="sheet">Excel</button>
+                <button type="button" class="mf-btn" id="btnSaidaEfetiva" data-icon="truck">Saída Efetiva</button>
+            </div>
+
+            <div class="mf-table-wrap">
+                <table class="mf-table" id="mfTabela">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>COD</th>
+                            <th></th>
+                            <th>BASE</th>
+                            <th>DATA</th>
+                            <th>CIOT</th>
+                            <th>MDF-E</th>
+                            <th>STATUS MDF-E</th>
+                            <th>MOTORISTA</th>
+                            <th>VEICULO</th>
+                            <th>ROTA</th>
+                            <th>SAIDA</th>
+                            <th>CHEGADA</th>
+                            <th>SITUAÇÃO</th>
+                            <th>ULTIMA POSIÇÃO</th>
+                            <th>KM INICIAL</th>
+                            <th>KM FINAL</th>
+                            <th>KM RODADO</th>
+                            <th>TEMPO ROTA</th>
+                            <th>COLETAS</th>
+                            <th>ENTREGAS</th>
+                            <th>PROGRESSO</th>
+                            <th>XML</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mfTabelaBody"></tbody>
+                </table>
+            </div>
+            <div class="mf-footer">
+                <span>Total de manifestos: <strong id="mfTotal">0</strong></span>
+                <span>* Data de Previsão</span>
+                <span id="mfTotalDir">0</span>
+            </div>
+            </div>
+
+            <form id="mfForm" class="mf-form mf-hidden" autocomplete="off">
+                <div class="mf-form__toolbar">
+                    <button type="button" class="mf-btn mf-btn--ghost" id="btnVoltarManifesto">Voltar</button>
+                    <button type="submit" class="mf-btn" id="btnSalvarManifesto">Salvar manifesto</button>
+                </div>
+                <div class="mf-form__grid">
+                    <aside class="mf-side">
+                        <h2>MANIFESTO DE CARGA &gt; Motorista</h2>
+                        <div class="mf-field">
+                            <label>UNIDADE EMISSORA</label>
+                            <select id="incUnidade">
+                                <option>HOLDING PACHECO</option>
+                                <option>BRETON TMS</option>
+                            </select>
+                        </div>
+                        <div class="mf-field">
+                            <label>MOTORISTA(S)</label>
+                            <div class="mf-plus">
+                                <select id="incMotorista"><option value="">NENHUM DEFINIDO</option></select>
+                                <button type="button" class="mf-plus__btn" id="btnAddMotorista" title="Adicionar motorista">+</button>
+                            </div>
+                        </div>
+                        <div class="mf-field">
+                            <label>AJUDANTES</label>
+                            <select id="incAjudantes"><option value="">NENHUM</option></select>
+                        </div>
+                        <div class="mf-field">
+                            <label>VEICULO</label>
+                            <select id="incVeiculo"><option value="">NENHUM</option></select>
+                        </div>
+                        <div class="mf-field">
+                            <label>SEMI-REBOQUE</label>
+                            <select id="incSemi"><option value="">NENHUM</option></select>
+                        </div>
+                        <div class="mf-field">
+                            <label>GERENCIADORA</label>
+                            <select id="incGerenciadora">
+                                <option>NENHUM</option>
+                            </select>
+                        </div>
+                        <div class="mf-pair">
+                            <div class="mf-field">
+                                <label>KM INICIAL</label>
+                                <input id="incKmIni" type="number" value="0">
+                            </div>
+                            <div class="mf-field">
+                                <label>KM FINAL</label>
+                                <input id="incKmFim" type="number" value="0">
+                            </div>
+                        </div>
+                        <div class="mf-pair">
+                            <div class="mf-field">
+                                <label>DATA SAIDA</label>
+                                <input id="incSaidaData" type="date">
+                            </div>
+                            <div class="mf-field">
+                                <label>HORARIO</label>
+                                <input id="incSaidaHora" type="time">
+                            </div>
+                        </div>
+                        <div class="mf-pair">
+                            <div class="mf-field">
+                                <label>PREV. CHEGADA</label>
+                                <input id="incChegadaData" type="date">
+                            </div>
+                            <div class="mf-field">
+                                <label>HORA</label>
+                                <input id="incChegadaHora" type="time">
+                            </div>
+                        </div>
+                        <div class="mf-qty">
+                            <div class="mf-field"><label>VOLUMES</label><input id="incVol" readonly value="0"></div>
+                            <div class="mf-field"><label>PESO</label><input id="incPeso" readonly value="0.00"></div>
+                            <div class="mf-field"><label>FRETE TOTAL</label><input id="incFrete" readonly value="0.00"></div>
+                            <div class="mf-field"><label>QTD. ENTREGAS</label><input id="incQtdEnt" readonly value="0"></div>
+                            <div class="mf-field"><label>QTD. COLETAS</label><input id="incQtdCol" readonly value="0"></div>
+                        </div>
+                        <div class="mf-ciot">CIOT</div>
+                    </aside>
+
+                    <div class="mf-main">
+                        <section class="mf-box">
+                            <div class="mf-box__bar">
+                                <strong>ENTREGAS</strong>
+                                <select id="incTipoEntrega">
+                                    <option>MINUTA</option>
+                                    <option>CT-E</option>
+                                    <option>NF-E</option>
+                                </select>
+                                <select id="incEmissaoEntrega"></select>
+                                <input id="incBuscaEntrega" type="text" placeholder="Filtrar emissão">
+                                <button type="button" class="mf-btn" id="btnMaisEntrega">+ MAIS +</button>
+                            </div>
+                            <div class="mf-table-wrap">
+                                <table class="mf-table mf-table--form">
+                                    <thead>
+                                        <tr>
+                                            <th>MD</th>
+                                            <th>EMISSAO</th>
+                                            <th>CTE</th>
+                                            <th>COLETA</th>
+                                            <th>DESTINATARIO</th>
+                                            <th>CIDADE</th>
+                                            <th>KM RODADO</th>
+                                            <th>VOL</th>
+                                            <th>PESO</th>
+                                            <th>VALOR NF</th>
+                                            <th>VALOR MINUTA</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="incEntregasBody"></tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <section class="mf-box">
+                            <div class="mf-box__bar">
+                                <strong>COLETA</strong>
+                                <select id="incTipoColeta">
+                                    <option>COLETA</option>
+                                    <option>MINUTA</option>
+                                </select>
+                                <select id="incEmissaoColeta"></select>
+                                <input id="incBuscaColeta" type="text" placeholder="Filtrar emissão">
+                                <button type="button" class="mf-btn" id="btnPesquisarColeta">PESQUISAR</button>
+                            </div>
+                            <div class="mf-table-wrap">
+                                <table class="mf-table mf-table--form">
+                                    <thead>
+                                        <tr>
+                                            <th>COLETA</th>
+                                            <th>EMISSÃO</th>
+                                            <th>SERVIÇO</th>
+                                            <th>REMETENTE</th>
+                                            <th>CIDADE</th>
+                                            <th>MDS</th>
+                                            <th>KM RODADO</th>
+                                            <th>VOL</th>
+                                            <th>PESO</th>
+                                            <th>VALOR NF</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="incColetasBody"></tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section id="view-terceiros" class="mf-hidden" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+            <div class="kanban-header">
+                <div>
+                    <h1>Manifestar — Terceiros</h1>
+                    <p>Monte o manifesto com veículos de terceiros e confirme a rota do dia</p>
+                </div>
+                <div class="kanban-toolbar">
+                    <button class="btn btn--secondary" id="btnRefresh" title="Recarregar dados">🔄 Atualizar</button>
+                    <button class="btn btn--primary" id="btnPublicarRotas">✅ Publicar Rotas do Dia</button>
+                </div>
+            </div>
+            <div class="stats-bar" id="statsBar">
+                <div class="stat-pill">📦 Backlog: <strong id="statBacklog">—</strong></div>
+                <div class="stat-pill">🚚 Em Rota: <strong id="statEmRota">—</strong></div>
+                <div class="stat-pill">✅ Concluídos: <strong id="statConcluidos">—</strong></div>
+                <div class="stat-pill">📍 Veículos Ativos: <strong id="statVeiculos">—</strong></div>
+            </div>
+            <div class="kanban-board" id="kanbanBoard" style="position: relative;">
+                <div class="skeleton-col" id="skeletonLoader">
+                    <div class="skeleton-header"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card" style="height:70px"></div>
+                    <div class="skeleton-card" style="height:80px"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<script type="module" src="../js/modules/roteirizacao.js?v=9"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+/* frontend/css/indicadores.css */
+
+.co2-highlight {
+    font-weight: 600;
+    color: var(--color-accent);
+}
+
+.margin-positive {
+    color: #2E7D32;
+    font-weight: 600;
+}
+
+.avaria-low {
+    color: #2E7D32;
+    font-weight: 600;
+}

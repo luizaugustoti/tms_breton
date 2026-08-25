@@ -1,0 +1,285 @@
+/* ==========================================================================
+   TMS Breton - Painel do Entregador (Paleta Oficial Vinho Breton)
+   ========================================================================== */
+
+:root {
+    --breton-vinho: #5A1827;         /* Tom Vinho / Burgundy oficial do sistema */
+    --breton-vinho-dark: #3D0E19;    /* Vinho escuro para fundos e contraste */
+    --breton-vinho-hover: #7A2437;   /* Vinho mais claro para interações */
+    --breton-gold: #C5A059;          /* Dourado para badges, ícones e destaques */
+    --breton-bg: #F9F8F6;            /* Fundo Creme / Off-white */
+    --breton-surface: #FFFFFF;       /* Cards brancos */
+    --breton-border: #E6E1DA;        /* Bordas areia suaves */
+    --breton-text: #222222;          /* Texto principal */
+    --breton-text-muted: #666666;    /* Texto secundário */
+    --breton-success: #2E7D32;       /* Status concluído */
+    --breton-warning: #D97706;       /* Status pendente */
+}
+
+body.driver-body {
+    background-color: var(--breton-bg);
+    margin: 0;
+    padding: 0;
+    font-family: 'Montserrat', sans-serif;
+    color: var(--breton-text);
+}
+
+.driver-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding-bottom: 40px;
+}
+
+/* Header em Vinho Oficial (#5A1827) */
+.driver-header {
+    background-color: var(--breton-vinho);
+    color: #FFFFFF;
+    padding: 22px 20px;
+    border-bottom-left-radius: 18px;
+    border-bottom-right-radius: 18px;
+    box-shadow: 0 6px 20px rgba(90, 24, 39, 0.25);
+    border-bottom: 3px solid var(--breton-gold);
+}
+
+.driver-header__brand {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.driver-header__logo {
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: 3px;
+    color: #FFFFFF;
+}
+
+.driver-header__badge {
+    background-color: var(--breton-gold);
+    color: var(--breton-vinho-dark);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.driver-profile-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background-color: var(--breton-vinho-dark);
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(197, 160, 89, 0.4);
+}
+
+.driver-avatar {
+    font-size: 1.8rem;
+    background-color: var(--breton-vinho);
+    padding: 6px;
+    border-radius: 50%;
+    border: 1px solid var(--breton-gold);
+}
+
+.driver-details h2 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0;
+    color: #FFFFFF;
+}
+
+.driver-details p {
+    font-size: 0.75rem;
+    margin: 3px 0 0 0;
+    color: var(--breton-gold);
+}
+
+/* Conteúdo */
+.driver-content {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* KPI Cards */
+.kpi-route-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.kpi-route-card {
+    background-color: var(--breton-surface);
+    padding: 14px 8px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid var(--breton-border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.kpi-route-card__value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--breton-vinho);
+}
+
+.kpi-route-card__value--done {
+    color: var(--breton-success);
+}
+
+.kpi-route-card__value--pending {
+    color: var(--breton-warning);
+}
+
+.kpi-route-card__label {
+    font-size: 0.7rem;
+    color: var(--breton-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Lista de Entregas */
+.route-section__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.route-section__header h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--breton-vinho);
+}
+
+.badge--gold {
+    background-color: #FFF9EE;
+    color: var(--breton-vinho);
+    border: 1.5px solid var(--breton-gold);
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+}
+
+.delivery-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Card da Parada */
+.stop-card {
+    background-color: var(--breton-surface);
+    border-radius: 12px;
+    border: 1px solid var(--breton-border);
+    padding: 18px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    position: relative;
+    overflow: hidden;
+}
+
+.stop-card--done {
+    border-left: 5px solid var(--breton-success);
+    opacity: 0.9;
+}
+
+.stop-card--pending {
+    border-left: 5px solid var(--breton-vinho);
+}
+
+.stop-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.stop-number {
+    font-size: 0.75rem;
+    font-weight: 700;
+    background-color: var(--breton-vinho);
+    color: var(--breton-gold);
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.stop-status {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.stop-status--pending {
+    background-color: #FFF8F0;
+    color: var(--breton-warning);
+    border: 1px solid var(--breton-warning);
+}
+
+.stop-status--done {
+    background-color: #E8F5E9;
+    color: var(--breton-success);
+}
+
+.stop-card__client {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--breton-vinho);
+    margin: 0 0 8px 0;
+}
+
+.stop-card__info {
+    font-size: 0.83rem;
+    color: var(--breton-text);
+    margin: 4px 0;
+    line-height: 1.4;
+}
+
+.stop-card__actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--breton-border);
+}
+
+/* Botão Principal de Ação (Vinho) */
+.btn-stop-action {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    box-sizing: border-box;
+    display: inline-block;
+    transition: all 0.2s ease;
+}
+
+.btn-stop-action--primary {
+    background-color: var(--breton-vinho);
+    color: #FFFFFF;
+    border: 1px solid var(--breton-gold);
+}
+
+.btn-stop-action--primary:active {
+    background-color: var(--breton-vinho-hover);
+}
+
+.btn-stop-action--maps {
+    background-color: #F4F0E8;
+    color: var(--breton-vinho);
+    border: 1px solid var(--breton-border);
+    max-width: 48px;
+    font-size: 1.1rem;
+    padding: 10px 0;
+}

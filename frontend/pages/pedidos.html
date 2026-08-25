@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TMS Breton - Pedidos & Cargas</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/cadastros.css">
+    <link rel="stylesheet" href="../css/modal.css">
+    <link rel="stylesheet" href="../css/minuta.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-body">
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar__brand">
+                <h2 class="sidebar__title">BRETON</h2>
+                <span class="sidebar__subtitle">TMS Operations</span>
+            </div>
+            <nav class="sidebar__nav">
+                <a href="dashboard.html" class="sidebar__link"><span class="sidebar__icon">📊</span> Dashboard</a>
+                <a href="cadastros.html" class="sidebar__link"><span class="sidebar__icon">📁</span> Cadastros</a>
+                <a href="estoque.html" class="sidebar__link"><span class="sidebar__icon">🏭</span> Estoque</a>
+                <a href="pedidos.html" class="sidebar__link sidebar__link--active"><span class="sidebar__icon">📦</span> Operacional</a>
+                <a href="painel-motorista.html" class="sidebar__link"><span class="sidebar__icon">📱</span> Painel do Motorista</a>
+                <a href="indicadores.html" class="sidebar__link"><span class="sidebar__icon">📈</span> Indicadores</a>
+                <a href="satisfacao.html" class="sidebar__link"><span class="sidebar__icon">⭐</span> Satisfação</a>
+                <a href="administracao.html" class="sidebar__link"><span class="sidebar__icon">⚙️</span> Administração</a>
+            </nav>
+            <div class="sidebar__footer">
+                <a href="../index.html" class="sidebar__logout">Sair do Sistema</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header__title">
+                    <h1 id="pageTitle">Pedidos & Cargas (Manifesto de Chegada)</h1>
+                    <p id="pageSubtitle">Gerenciamento de Notas Fiscais e conferência de volumes da carga da semana</p>
+                </div>
+            </header>
+
+            <!-- VISÃO: LISTA DE PEDIDOS -->
+            <section id="view-lista" class="page-view page-view--active">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <h2>Notas Fiscais / Cargas Recebidas</h2>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <input type="text" id="searchPedidos" placeholder="Pesquisar pedido ou cliente..." class="form-input search-input" style="padding: 8px 12px 8px 34px; font-size: 0.9rem; width: 260px; border: 1px solid #ccc; border-radius: 4px;" />
+                    </div>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nº Pedido</th>
+                            <th>Cliente Final</th>
+                            <th>Cidade / UF</th>
+                            <th>Volumes</th>
+                            <th>Data Agendada</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablePedidosBody">
+                        <!-- Renderizado via JS -->
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- VISÃO: EMISSÃO / EDICÃO DE COMPROVANTE (MINUTA) -->
+            <section id="view-manual" class="page-view">
+                <form id="minutaForm" class="minuta" autocomplete="off">
+                    <input type="hidden" id="mn_pedido_id" value="">
+                    
+                    <div class="minuta__toolbar">
+                        <button type="button" class="minuta-btn minuta-btn--ghost" id="btnMinutaVoltar">Voltar para a lista</button>
+                        <button type="submit" class="minuta-btn" id="btnMinutaSalvar">Salvar Comprovante</button>
+                    </div>
+                    
+                    <h1 class="minuta__title">EMISSÃO</h1>
+
+                    <!-- CABEÇALHO DO PEDIDO / DOCUMENTO -->
+                    <div class="minuta-row minuta-row--top">
+                        <div class="minuta-field minuta-field--req"><label>Nº Pedido</label><input id="mn_pedido_numero" type="text" required></div>
+                        <div class="minuta-field"><label>Pedido Web</label><input id="mn_pedido_web" type="text"></div>
+                        <div class="minuta-field"><label>Ord. Carregamento</label><input id="mn_ord_carregamento" type="text"></div>
+                        <div class="minuta-field minuta-field--req"><label>Tipo de Pedido</label><input id="mn_tipo_pedido" type="text" placeholder="Ex: TROCA DE ASSISTENCIA"></div>
+                        <div class="minuta-field minuta-field--req"><label>Data Emissão</label><input id="mn_data_emissao" type="date"></div>
+                        <div class="minuta-field"><label>Hora Emissão</label><input id="mn_hora_emissao" type="time"></div>
+                        <div class="minuta-field minuta-field--req"><label>Loja / Origem</label><input id="mn_loja" type="text" placeholder="Ex: CD RJ"></div>
+                    </div>
+
+                    <!-- RECEPTOR E ENDEREÇO DE ENTREGA -->
+                    <div class="minuta-parties">
+                        <div>
+                            <section class="minuta-block">
+                                <div class="minuta-block__head">1. Cliente / Destinatário</div>
+                                <div class="minuta-block__body minuta-grid minuta-grid--remetente">
+                                    <div class="minuta-field minuta-field--req" style="grid-column: 1 / -1;"><label>Nome do Cliente</label><input id="mn_dest_nome" required></div>
+                                    <div class="minuta-field minuta-field--req" style="grid-column: 1 / -1;"><label>Endereço de Entrega</label><input id="mn_dest_end" required></div>
+                                    <div class="minuta-field"><label>Bairro</label><input id="mn_dest_bairro"></div>
+                                    <div class="minuta-field minuta-field--req"><label>Município / UF</label><input id="mn_dest_cidade"></div>
+                                    <div class="minuta-field"><label>CEP</label><input id="mn_dest_cep"></div>
+                                </div>
+                            </section>
+                        </div>
+                        <div>
+                            <section class="minuta-block">
+                                <div class="minuta-block__head">2. Logística & Veículo</div>
+                                <div class="minuta-block__body minuta-grid minuta-grid--exp">
+                                    <div class="minuta-field minuta-field--req"><label>Data da Entrega</label><input id="mn_entrega_data" type="date"></div>
+                                    <div class="minuta-field"><label>Período Entrega</label><input id="mn_entrega_periodo" placeholder="Ex: MANHA"></div>
+                                    <div class="minuta-field"><label>Placa do Veículo</label><input id="mn_placa_veiculo"></div>
+                                    <div class="minuta-field" style="grid-column: 1 / -1;"><label>Observações de Entrega</label><input id="mn_observacao" placeholder="Ex: DESEMBALAR E CONFERIR..."></div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <!-- TABELA DE ITENS / VOLUMES DA ENTREGA -->
+                    <section class="minuta-block">
+                        <div class="minuta-block__head" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>3. Etiquetas / Volumes da Carga</span>
+                            <button type="button" class="minuta-btn" id="btnAddVolumeItem">+ Adicionar Volume</button>
+                        </div>
+                        <div class="minuta-block__body">
+                            <div class="minuta-table-wrap">
+                                <table class="minuta-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Etiqueta</th>
+                                            <th>Volume</th>
+                                            <th>Qtd</th>
+                                            <th>Descrição do Produto</th>
+                                            <th>Dimensão (LxAxP)</th>
+                                            <th>Entregue?</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="mnNotasBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- RESUMO DE TRANSPORTADO E REGISTRO NO LOCAL -->
+                    <!-- RESUMO DE TRANSPORTADO E HISTÓRICO DA EMISSÃO -->
+<div class="minuta-split">
+    <!-- NOVO BLOCO DE HISTÓRICO DE EMISSÃO -->
+    <section class="minuta-block">
+        <div class="minuta-block__head" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Histórico da Emissão & Eventos</span>
+            <button type="button" class="minuta-btn minuta-btn--ghost" id="btnAddHistorico" style="padding: 4px 10px; font-size: 0.75rem; background: #fff;">+ Add Evento</button>
+        </div>
+        <div class="minuta-block__body" style="padding: 8px;">
+            <div class="minuta-table-wrap">
+                <table class="minuta-table">
+                    <thead>
+                        <tr>
+                            <th>Etapa / Evento</th>
+                            <th>Data / Hora</th>
+                            <th>Anexo / Doc</th>
+                            <th>Obs.</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="mnHistoricoBody">
+                        <!-- Linhas de histórico geradas dinamicamente via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- TOTAIS DO TRANSPORTE -->
+    <section class="minuta-block">
+        <div class="minuta-block__head">Totais do Transporte</div>
+        <div class="minuta-block__body">
+            <div class="minuta-transp">
+                <div class="minuta-field minuta-field--req"><label>Total de Etiquetas</label><input id="mn_total_etiquetas" readonly></div>
+                <div class="minuta-field minuta-field--req"><label>Total de Volumes</label><input id="mn_volumes" readonly></div>
+                <div class="minuta-field"><label>Cubagem (m³)</label><input id="mn_cubagem" type="number" step="0.001" value="0.000"></div>
+                <div class="minuta-field"><label>Peso Real (kg)</label><input id="mn_peso" type="number" step="0.01" value="0.00"></div>
+                <div class="minuta-field" style="grid-column: 1 / -1;"><label>Recebido por (Nome / Doc)</label><input id="mn_recebido_por" placeholder="Nome de quem assinou na entrega"></div>
+            </div>
+        </div>
+    </section>
+</div>
+
+                    <div class="minuta-actions">
+                        <button type="button" class="minuta-btn minuta-btn--ghost" id="btnMinutaVoltar2">Cancelar</button>
+                        <button type="submit" class="minuta-btn">Salvar Comprovante de Entrega</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- VISÃO: IMPORTAÇÃO PDF -->
+            <section id="view-pdf" class="page-view">
+                <div class="inpage-panel">
+                    <h2 style="margin-bottom: 12px;">Emitir com PDF</h2>
+                    <p style="color: var(--color-text-light); margin-bottom: 20px;">Selecione ou arraste o comprovante/nota fiscal em PDF para importar na mesma tela.</p>
+                    <div class="pdf-dropzone" id="pdfDropzone" tabindex="0">
+                        <strong>Arraste o PDF aqui</strong>
+                        <span>ou clique para escolher o arquivo</span>
+                    </div>
+                    <button type="button" id="btnEscanearNota" hidden>Emitir com PDF</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="../js/modules/pedidos.js?v=16"></script>
+</body>
+</html>

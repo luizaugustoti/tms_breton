@@ -1,0 +1,86 @@
+/* frontend/css/login.css */
+
+.login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    /* O fundo da tela inteira recebe a cor Vinho da logo */
+    background-color: var(--color-primary); 
+}
+
+.login__container {
+    background-color: var(--color-surface);
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius);
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3); /* Sombra mais suave para destaque */
+}
+
+.login__brand {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.login__title {
+    font-size: 2.2rem;
+    font-weight: 600;
+    letter-spacing: 5px;
+    color: var(--color-primary); /* Texto BRETON em vinho */
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.login__subtitle {
+    font-size: 0.85rem;
+    color: var(--color-accent); /* Texto do subtítulo no tom Dourado/Bronze */
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 400;
+}
+
+.login__form {
+    display: flex;
+    flex-direction: column;
+}
+
+.login__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--spacing-lg);
+}
+
+.login__forgot {
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    cursor: pointer;
+}
+
+.login__forgot:hover {
+    color: var(--color-accent); /* Destaque dourado no hover */
+}
+
+.reset-password-info {
+    padding: 12px 14px;
+    border: 1px solid rgba(107, 35, 53, 0.15);
+    background: rgba(107, 35, 53, 0.04);
+    border-radius: 10px;
+    color: var(--color-text-main);
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.reset-password-info p {
+    margin: 0 0 8px;
+}
+
+.reset-password-info p:last-child {
+    margin-bottom: 0;
+}
+
+.login__button {
+    width: 100%;
+}
