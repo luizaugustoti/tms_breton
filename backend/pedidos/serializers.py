@@ -7,16 +7,18 @@ from django.db.models import Q
 import re
 import json
 
+
 class ItemPedidoSerializer(serializers.ModelSerializer):
     produto = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = ItemPedido
         fields = [
-            'id', 'produto', 'codigo', 'etiqueta', 'descricao', 
+            'id', 'produto', 'codigo', 'etiqueta', 'descricao',
             'quantidade', 'unidade', 'peso_unitario', 'valor_unitario'
         ]
         read_only_fields = ['id']
+
 
 class PedidoSerializer(serializers.ModelSerializer):
     itens = ItemPedidoSerializer(many=True, required=False)
@@ -25,23 +27,32 @@ class PedidoSerializer(serializers.ModelSerializer):
     emitente = serializers.SerializerMethodField()
     historico_entrega = serializers.SerializerMethodField()
     loja = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
+
+    # Campos de conveniência (aliases) para compatibilidade com frontend
+    pedido_numero = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    cliente_nome = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    cidade_uf = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+
     remetente_documento = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
     remetente_endereco = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
     remetente_complemento = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
     remetente_numero = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
     remetente_cidade = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
     remetente_uf = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
+
     class Meta:
         model = Pedido
         fields = [
             'id', 'numero_nota', 'pedido_web', 'loja', 'cliente', 'cnpj_cpf',
             'endereco', 'bairro', 'cidade', 'uf', 'cep',
             'data_entrega', 'periodo', 'placa_veiculo', 'observacao',
-            'peso_total', 'volume_total', 'tipo_operacao', 'status', 'veiculo', 'motorista', 
+            'peso_total', 'volume_total', 'tipo_operacao', 'status', 'veiculo', 'motorista',
             'criado_em', 'assinatura_base64', 'foto_entrega_base64', 'itens',
             'destinatario', 'emitente', 'historico_entrega',
             'remetente_documento', 'remetente_endereco', 'remetente_complemento',
             'remetente_numero', 'remetente_cidade', 'remetente_uf',
+            # aliases write_only
+            'pedido_numero', 'cliente_nome', 'cidade_uf',
         ]
         read_only_fields = ['id', 'criado_em']
 
@@ -67,7 +78,6 @@ class PedidoSerializer(serializers.ModelSerializer):
         paradas = obj.paradas.all() if hasattr(obj, 'paradas') else obj.paradarota_set.all()
         if not paradas:
             return []
-        # Sort in memory to avoid hitting the database again
         parada = sorted(paradas, key=lambda p: p.id, reverse=True)[0]
 
         evidencias = []
@@ -153,7 +163,7 @@ class PedidoSerializer(serializers.ModelSerializer):
     @staticmethod
     def _clean_text(value, max_length):
         value = re.sub(r'\s+', ' ', str(value or '')).strip()
-        value = re.split(r'\bEtiqueta\s+Volumes\b|\bTotal\s+de\s+Etiqueta\b', value, maxsplit=1, flags=re.IGNORECASE)[0]
+        value = re.split(r'Etiqueta\s+Volumes|Total\s+de\s+Etiqueta', value, maxsplit=1, flags=re.IGNORECASE)[0]
         return value[:max_length].strip(' -:;|')
 
     def validate_numero_nota(self, value):
@@ -169,6 +179,27 @@ class PedidoSerializer(serializers.ModelSerializer):
         return self._clean_text(value, 150)
 
     def validate(self, attrs):
+        # --- ALIASES: mapeia campos do frontend para os do backend ---
+        if 'pedido_numero' in attrs and attrs['pedido_numero'] and not attrs.get('numero_nota'):
+            attrs['numero_nota'] = attrs.pop('pedido_numero')
+        else:
+            attrs.pop('pedido_numero', None)
+
+        if 'cliente_nome' in attrs and attrs['cliente_nome'] and not attrs.get('cliente'):
+            attrs['cliente'] = attrs.pop('cliente_nome')
+        else:
+            attrs.pop('cliente_nome', None)
+
+        if 'cidade_uf' in attrs and attrs['cidade_uf']:
+            cidade_uf_raw = attrs.pop('cidade_uf')
+            if not attrs.get('cidade') or not attrs.get('uf'):
+                match = re.match(r'^(.*?)\s*\|\s*([A-Z]{2})$', str(cidade_uf_raw).strip(), re.IGNORECASE)
+                if match:
+                    attrs['cidade'] = match.group(1).strip()
+                    attrs['uf'] = match.group(2).strip().upper()
+                else:
+                    attrs['cidade'] = cidade_uf_raw.strip()
+
         for field, limit in (
             ('loja', 255), ('cliente', 255), ('endereco', 500),
             ('bairro', 100), ('cidade', 100), ('uf', 2), ('cep', 20),
@@ -231,21 +262,16 @@ class PedidoSerializer(serializers.ModelSerializer):
                     'itens': 'A quantidade dos itens deve ser maior que zero.'
                 })
 
-            # 1. Tenta encontrar o produto existente
             produto_obj = self._resolve_produto(item_data)
 
-            # 2. Se não encontrar de jeito nenhum, criamos o produto na tabela ProdutoEstoque 
-            # usando apenas campos seguros que existem em qualquer tabela de estoque padrão.
             if not produto_obj:
                 codigo_sku = str(
-                    item_data.get('codigo') or 
-                    item_data.get('etiqueta') or 
-                    item_data.get('produto') or 
+                    item_data.get('codigo') or
+                    item_data.get('etiqueta') or
+                    item_data.get('produto') or
                     'AUTO_PROD'
                 ).strip()
 
-                # Tenta criar o produto garantindo um registro válido no banco.
-                # Se falhar, retornamos erro explícito para não mascarar inconsistência de estoque.
                 try:
                     produto_obj = ProdutoEstoque.objects.create(
                         codigo_sku=codigo_sku,
@@ -256,12 +282,9 @@ class PedidoSerializer(serializers.ModelSerializer):
                         'itens': f'Falha ao preparar item de estoque para "{codigo_sku}".'
                     }) from exc
 
-            # 3. Agora o produto_obj é garantidamente um objeto válido, 
-            # satisfazendo a restrição 'produto_id cannot be null' do banco de dados.
             item_data['produto'] = produto_obj
             ItemPedido.objects.create(pedido=pedido, **item_data)
 
-            # 4. Atualiza o estoque e gera a movimentação de saída
             produto_obj.quantidade -= quantidade
             produto_obj.save(update_fields=['quantidade'])
             MovimentacaoEstoque.objects.create(
@@ -270,6 +293,7 @@ class PedidoSerializer(serializers.ModelSerializer):
                 quantidade=quantidade,
                 motivo=f'Saída automática para o pedido {pedido.numero_nota}',
             )
+
     @transaction.atomic
     def create(self, validated_data):
         from cadastros.pessoas import registrar_pessoas_da_emissao

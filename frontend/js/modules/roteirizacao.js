@@ -909,8 +909,23 @@ function initManifestoList() {
     document.getElementById('btnSaidaEfetiva')?.addEventListener('click', registrarSaidaEfetiva);
     document.getElementById('btnVoltarManifesto')?.addEventListener('click', fecharFormManifesto);
     document.getElementById('mfForm')?.addEventListener('submit', salvarFormManifesto);
-    document.getElementById('btnMaisEntrega')?.addEventListener('click', () => adicionarPedidoAoForm('entrega'));
-    document.getElementById('btnPesquisarColeta')?.addEventListener('click', () => adicionarPedidoAoForm('coleta'));
+    // CORRECAO: forcar type="button" e preventDefault para nao submeter o form ao clicar
+    const btnMaisEntrega = document.getElementById('btnMaisEntrega');
+    if (btnMaisEntrega) {
+        btnMaisEntrega.type = 'button';
+        btnMaisEntrega.addEventListener('click', (e) => {
+            e.preventDefault();
+            adicionarPedidoAoForm('entrega');
+        });
+    }
+    const btnPesquisarColeta = document.getElementById('btnPesquisarColeta');
+    if (btnPesquisarColeta) {
+        btnPesquisarColeta.type = 'button';
+        btnPesquisarColeta.addEventListener('click', (e) => {
+            e.preventDefault();
+            adicionarPedidoAoForm('coleta');
+        });
+    }
     document.getElementById('incBuscaEntrega')?.addEventListener('input', () => preencherSelectEmissoes('incEmissaoEntrega', 'incBuscaEntrega'));
     document.getElementById('incBuscaColeta')?.addEventListener('input', () => preencherSelectEmissoes('incEmissaoColeta', 'incBuscaColeta'));
     document.getElementById('incBuscaEntrega')?.addEventListener('keydown', (event) => {

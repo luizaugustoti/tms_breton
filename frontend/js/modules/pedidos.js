@@ -231,7 +231,7 @@ function normalizeNotaPayload(nota = {}) {
         data_emissao: nota.data_emissao || hojeISO(),
         hora_emissao: nota.hora_emissao || '',
         loja: nota.loja || nota.loja_emitente || '',
-        cliente_nome: dest.nome || nota.cliente_nome || '',
+        cliente_nome: dest.nome || nota.cliente_nome || nota.cliente || '',
         endereco: dest.logradouro || endComp.logradouro || nota.endereco || '',
         bairro: dest.bairro || endComp.bairro || nota.bairro || '',
         cidade: dest.cidade || endComp.cidade || nota.cidade || '',
@@ -377,19 +377,33 @@ function initMinutaForm() {
             return;
         }
 
+        // Separa cidade e UF do campo combinado
+        const cidadeUfRaw = getVal('mn_dest_cidade');
+        let cidade = cidadeUfRaw;
+        let uf = '';
+        const matchUf = cidadeUfRaw.match(/^(.*?)\s*\|\s*([A-Z]{2})$/i);
+        if (matchUf) {
+            cidade = matchUf[1].trim();
+            uf = matchUf[2].trim().toUpperCase();
+        }
+
         const payload = {
             id: getVal('mn_pedido_id') || undefined,
-            pedido_numero: pedidoNumero,
+            // CORRECAO: enviar numero_nota (nome do campo no backend)
+            numero_nota: pedidoNumero,
             pedido_web: getVal('mn_pedido_web'),
             ordem_carregamento: getVal('mn_ord_carregamento'),
             tipo_pedido: getVal('mn_tipo_pedido'),
             data_emissao: getVal('mn_data_emissao'),
             hora_emissao: getVal('mn_hora_emissao'),
             loja: getVal('mn_loja'),
-            cliente_nome: clienteNome,
+            // CORRECAO: enviar cliente (nome do campo no backend)
+            cliente: clienteNome,
             endereco: getVal('mn_dest_end'),
             bairro: getVal('mn_dest_bairro'),
-            cidade_uf: getVal('mn_dest_cidade'),
+            // CORRECAO: enviar cidade e uf separados
+            cidade: cidade,
+            uf: uf,
             cep: getVal('mn_dest_cep'),
             data_entrega: getVal('mn_entrega_data'),
             periodo: getVal('mn_entrega_periodo'),
@@ -406,10 +420,12 @@ function initMinutaForm() {
             },
             itens: Array.from(document.querySelectorAll('#mnNotasBody tr')).map((tr) => ({
                 etiqueta: tr.querySelector('[data-nf="etiqueta"]')?.value.trim() || '',
+                codigo: tr.querySelector('[data-nf="etiqueta"]')?.value.trim() || '',
                 volumes: tr.querySelector('[data-nf="volumes"]')?.value.trim() || '01/01',
                 quantidade: parseFloat(tr.querySelector('[data-nf="qtd"]')?.value || '1') || 1,
                 descricao: tr.querySelector('[data-nf="descricao"]')?.value.trim() || '',
                 dimensao: tr.querySelector('[data-nf="dimensao"]')?.value.trim() || '',
+                unidade: 'UN',
                 entregue: tr.querySelector('[data-nf="entregue"]')?.value === 'Sim',
             })),
         };
@@ -434,9 +450,9 @@ async function loadPedidosData() {
 
         pedidosCache = rawData.map(p => ({
             id: p.id || p.pedido_numero,
-            pedido_numero: p.pedido_numero || p.numero || '—',
-            cliente_nome: p.cliente_nome || p.cliente || '—',
-            cidade_uf: p.cidade_uf || [p.cidade, p.uf].filter(Boolean).join('/') || '—',
+            pedido_numero: p.numero_nota || p.pedido_numero || p.numero || '—',
+            cliente_nome: p.cliente || p.cliente_nome || '—',
+            cidade_uf: [p.cidade, p.uf].filter(Boolean).join('/') || p.cidade_uf || '—',
             volumes: p.volumes || p.total_volumes || (p.itens ? p.itens.length : '—'),
             data_entrega: p.data_entrega || '—',
             status: p.status || 'Pendente'
