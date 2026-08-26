@@ -132,6 +132,171 @@
     color: #2C2C2C;
 }
 
+.tms-multiselect {
+    position: relative;
+    display: grid;
+    gap: 10px;
+}
+
+.tms-multiselect__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #d6d9e0;
+    border-radius: 10px;
+    background: #fff;
+    color: #596273;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.tms-multiselect__trigger[aria-expanded="true"] {
+    border-color: var(--color-accent, #7C5CBF);
+    box-shadow: 0 0 0 3px rgba(124, 92, 191, 0.12);
+}
+
+.tms-multiselect__chevron {
+    color: #7c8494;
+    transition: transform .15s;
+}
+
+.tms-multiselect__trigger[aria-expanded="true"] .tms-multiselect__chevron {
+    transform: rotate(180deg);
+}
+
+.tms-multiselect__panel {
+    position: absolute;
+    z-index: 10;
+    top: 52px;
+    left: 0;
+    right: 0;
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #dfe2e9;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(35, 39, 52, .16);
+}
+
+.tms-multiselect__panel[hidden] {
+    display: none;
+}
+
+.tms-multiselect__search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    border: 1px solid #d6d9e0;
+    border-radius: 10px;
+    background: #fff;
+    color: #7c8494;
+}
+
+.tms-multiselect__search-wrap:focus-within {
+    border-color: var(--color-accent, #7C5CBF);
+    box-shadow: 0 0 0 3px rgba(124, 92, 191, 0.12);
+}
+
+.tms-multiselect__search-wrap input {
+    min-width: 0;
+    width: 100%;
+    padding: 11px 0;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.tms-multiselect__options {
+    display: grid;
+    gap: 6px;
+    max-height: 190px;
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid #e1e4ea;
+    border-radius: 10px;
+    background: #f8f9fc;
+}
+
+.tms-multiselect__option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: #fff;
+    color: #394150;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .15s;
+}
+
+.tms-multiselect__option:hover {
+    border-color: #cfc5ec;
+    background: #fbfaff;
+    transform: translateX(2px);
+}
+
+.tms-multiselect__option.is-selected {
+    border-color: #b9a8e5;
+    background: #f0ebff;
+    color: #4d3a8c;
+    font-weight: 600;
+}
+
+.tms-multiselect__check {
+    display: grid;
+    place-items: center;
+    width: 19px;
+    height: 19px;
+    flex: 0 0 19px;
+    border: 1px solid #c6cad4;
+    border-radius: 5px;
+    background: #fff;
+    color: transparent;
+    font-size: 12px;
+}
+
+.tms-multiselect__option.is-selected .tms-multiselect__check {
+    border-color: #7c5cbf;
+    background: #7c5cbf;
+    color: #fff;
+}
+
+.tms-multiselect__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tms-multiselect__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #3730a3;
+    font-size: 0.82rem;
+}
+
+.tms-multiselect__chip button {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+}
+
 .tms-modal .form-group textarea {
     resize: vertical;
     min-height: 72px;

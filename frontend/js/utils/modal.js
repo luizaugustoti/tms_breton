@@ -84,7 +84,9 @@ export function openModal({ title, fields = [], confirmLabel = 'Salvar', onConfi
         const formData = {};
         fields.forEach(f => {
             const el = document.getElementById(`mf_${f.id}`);
-            if (el) formData[f.id] = el.value;
+            if (el) formData[f.id] = el.multiple
+                ? Array.from(el.selectedOptions).map(option => option.value)
+                : el.value;
         });
 
         // Coleta todos os inputs/selects/textareas com id dentro do form
@@ -113,6 +115,58 @@ export function openModal({ title, fields = [], confirmLabel = 'Salvar', onConfi
         const firstInput = modal.querySelector('input, select, textarea');
         if (firstInput) firstInput.focus();
     }, 100);
+
+    fields.filter(f => f.type === 'multiselect').forEach(f => {
+        const select = document.getElementById(`mf_${f.id}`);
+        const search = document.getElementById(`mf_${f.id}_search`);
+        const options = document.getElementById(`mf_${f.id}_options`);
+        const chips = document.getElementById(`mf_${f.id}_chips`);
+        const trigger = document.getElementById(`mf_${f.id}_trigger`);
+        const panel = document.getElementById(`mf_${f.id}_panel`);
+        const renderChips = () => {
+            const selectedOptions = Array.from(select.selectedOptions);
+            trigger.querySelector('.tms-multiselect__summary').textContent = selectedOptions.length
+                ? `${selectedOptions.length} ajudante${selectedOptions.length > 1 ? 's' : ''} selecionado${selectedOptions.length > 1 ? 's' : ''}`
+                : 'Selecione os ajudantes...';
+            chips.innerHTML = selectedOptions.map(option =>
+                `<span class="tms-multiselect__chip">${option.textContent}<button type="button" data-value="${option.value}" aria-label="Remover ${option.textContent}">×</button></span>`
+            ).join('');
+            options.querySelectorAll('[data-value]').forEach(option => {
+                const selected = Array.from(select.selectedOptions).some(item => item.value === option.dataset.value);
+                option.classList.toggle('is-selected', selected);
+                option.setAttribute('aria-checked', String(selected));
+            });
+            chips.querySelectorAll('button').forEach(button => button.addEventListener('click', () => {
+                const option = Array.from(select.options).find(item => item.value === button.dataset.value);
+                if (option) option.selected = false;
+                renderChips();
+            }));
+        };
+        trigger.addEventListener('click', () => {
+            const isOpen = panel.hidden;
+            panel.hidden = !isOpen;
+            trigger.setAttribute('aria-expanded', String(isOpen));
+            if (isOpen) search.focus();
+        });
+        search.addEventListener('input', () => {
+            const term = search.value.trim().toLowerCase();
+            options.querySelectorAll('[data-value]').forEach(option => {
+                option.hidden = !!term && !option.textContent.toLowerCase().includes(term);
+            });
+            document.addEventListener('click', (event) => {
+                if (!panel.contains(event.target) && !trigger.contains(event.target)) {
+                    panel.hidden = true;
+                    trigger.setAttribute('aria-expanded', 'false');
+                }
+            });
+        });
+        options.querySelectorAll('[data-value]').forEach(option => option.addEventListener('click', () => {
+            const selectOption = Array.from(select.options).find(item => item.value === option.dataset.value);
+            if (selectOption) selectOption.selected = !selectOption.selected;
+            renderChips();
+        }));
+        renderChips();
+    });
 }
 
 export function renderFormFields(fields) {
@@ -155,6 +209,36 @@ function renderField(f) {
             return `<option value="${optVal}" ${selected}>${optLabel}</option>`;
         }).join('');
         input = `<select id="mf_${f.id}" ${required}><option value="">Selecione...</option>${opts}</select>`;
+    } else if (f.type === 'multiselect') {
+        const selectedValues = Array.isArray(val) ? val.map(String) : [];
+        const opts = (f.options || []).map(o => {
+            const optVal = typeof o === 'string' ? o : o.value;
+            const optLabel = typeof o === 'string' ? o : o.label;
+            const selected = selectedValues.includes(String(optVal)) ? 'selected' : '';
+            return `<option value="${optVal}" ${selected}>${optLabel}</option>`;
+        }).join('');
+        input = `
+            <div class="tms-multiselect">
+                <button type="button" id="mf_${f.id}_trigger" class="tms-multiselect__trigger" aria-expanded="false" aria-controls="mf_${f.id}_panel">
+                    <span class="tms-multiselect__summary">Selecione os ajudantes...</span>
+                    <span class="tms-multiselect__chevron" aria-hidden="true">▾</span>
+                </button>
+                <div id="mf_${f.id}_panel" class="tms-multiselect__panel" hidden>
+                    <div class="tms-multiselect__search-wrap">
+                        <span aria-hidden="true">⌕</span>
+                        <input id="mf_${f.id}_search" type="search" placeholder="${placeholder || 'Pesquisar ajudante...'}" aria-label="Pesquisar ${f.label}">
+                    </div>
+                    <div id="mf_${f.id}_options" class="tms-multiselect__options" role="group" aria-label="${f.label}">
+                        ${(f.options || []).map(o => {
+                            const optVal = typeof o === 'string' ? o : o.value;
+                            const optLabel = typeof o === 'string' ? o : o.label;
+                            return `<button type="button" class="tms-multiselect__option" data-value="${optVal}" role="checkbox" aria-checked="${selectedValues.includes(String(optVal))}"><span class="tms-multiselect__check" aria-hidden="true">✓</span><span>${optLabel}</span></button>`;
+                        }).join('')}
+                    </div>
+                </div>
+                <select id="mf_${f.id}" multiple ${required} hidden aria-hidden="true" tabindex="-1">${opts}</select>
+                <div id="mf_${f.id}_chips" class="tms-multiselect__chips" aria-live="polite"></div>
+            </div>`;
     } else if (f.type === 'textarea') {
         input = `<textarea id="mf_${f.id}" placeholder="${placeholder}" ${required} rows="3">${val}</textarea>`;
     } else {

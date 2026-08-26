@@ -111,6 +111,12 @@
     background-color: #F0F0F0;
 }
 
+.equipe-motorista {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .badge {
     padding: 4px 8px;
     border-radius: 12px;

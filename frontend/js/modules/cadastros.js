@@ -69,10 +69,39 @@ function initials(nome = '') {
     return nome.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('');
 }
 
+function semDuplicacaoAdjacente(value) {
+    const texto = String(value || '').trim();
+    if (!texto) return '';
+    for (let tamanho = Math.floor(texto.length / 2); tamanho > 1; tamanho -= 1) {
+        if (texto.length % tamanho === 0 && texto === texto.slice(0, tamanho).repeat(texto.length / tamanho))
+            return texto.slice(0, tamanho);
+    }
+    return texto.replace(/^(.+?)(?:\s*\1)+$/i, '$1').trim();
+}
+
+function ehMotorista(funcionario) {
+    const dados = [
+        funcionario?.cargo,
+        funcionario?.tipo_cadastro,
+        funcionario?.role,
+        funcionario?.perfil,
+    ].filter(Boolean).join(' ');
+    return /motorista/i.test(dados);
+}
+
+function nomeMotoristaEquipe(equipe) {
+    const motoristaId = Number(equipe?.motorista);
+    const funcionario = funcionariosCache.find(f => Number(f.usuario_id) === motoristaId);
+    if (funcionario?.nome) return funcionario.nome.trim();
+    return semDuplicacaoAdjacente(equipe?.motorista_nome) || '—';
+}
+
 // ─────────────────────────────────────────────────────────────
 // BOOTSTRAP
 // ─────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+    if (window.__cadastrosInicializado) return;
+    window.__cadastrosInicializado = true;
     if (!checkAuth()) return;
 
     const btnNewUsuario = document.getElementById('btnNewUsuario');
@@ -195,7 +224,8 @@ function initSearchFilters() {
         renderEquipesTable(equipesCache.filter(eq =>
             (eq.nome || '').toLowerCase().includes(t) ||
             (eq.motorista_nome || '').toLowerCase().includes(t) ||
-            (eq.membros_info || '').toLowerCase().includes(t)
+            (eq.membros_info || '').toLowerCase().includes(t) ||
+            (eq.membros_nomes || []).join(' ').toLowerCase().includes(t)
         ));
     });
 
@@ -318,8 +348,8 @@ function actionButtons(id, editClass, deleteClass) {
     return `
         <td>
             <div class="btn-row">
-                <button class="btn-action btn-edit ${editClass}" data-id="${id}" title="Editar">✏️ Editar</button>
-                <button class="btn-action btn-delete ${deleteClass}" data-id="${id}" title="Excluir">🗑️</button>
+                <button class="btn-action btn-edit ${editClass}" data-id="${id}" title="Editar" data-icon="pencil">Editar</button>
+                <button class="btn-action btn-delete ${deleteClass}" data-id="${id}" title="Excluir" data-icon="trash">Excluir</button>
             </div>
         </td>`;
 }
@@ -1081,11 +1111,12 @@ function imprimirQrVeiculos() {
 // ─────────────────────────────────────────────────────────────
 function renderEquipesTable(data) {
     renderTable('tableEquipesBody', data, row => {
-        const motoristaNome = row.motorista_nome || '—';
+        const motoristaNome = nomeMotoristaEquipe(row);
+        const membrosNomes = row.membros_nomes || [];
         return `
             <td><strong>${row.nome || '—'}</strong></td>
-            <td>👤 ${motoristaNome}</td>
-            <td><small>${row.membros_info || 'Nenhum membro adicional'}</small></td>
+            <td><span class="equipe-motorista" data-icon="user">${motoristaNome}</span></td>
+            <td><small>${membrosNomes.join(', ') || row.membros_info || 'Nenhum membro adicional'}</small></td>
             <td>${statusBadge(row.ativo ? 'Ativo' : 'Inativo')}</td>
             ${actionButtons(row.id, 'btn-edit-eq', 'btn-del-eq')}`;
     }, 5);
@@ -1097,7 +1128,10 @@ function renderEquipesTable(data) {
 function openModalEquipe(existente = null) {
     const isEdit = !!existente;
     
-    const funcionariosComUsuario = funcionariosCache.filter(f => Number.isInteger(f.usuario_id));
+    const funcionariosComUsuario = funcionariosCache.filter(f =>
+        Number.isInteger(f.usuario_id) && ehMotorista(f)
+    );
+    const ajudantes = funcionariosCache.filter(f => f.ativo !== false && /ajudante/i.test(f.cargo || ''));
     const opcoesFuncionarios = [
         {
             value: '',
@@ -1131,8 +1165,14 @@ function openModalEquipe(existente = null) {
                 options: opcoesFuncionarios
             },
             {
-                id: 'membros_info', label: 'Membros / Ajudantes da Equipe', type: 'textarea',
-                value: existente?.membros_info || '', placeholder: 'Ex: João Ajudante, Pedro Auxiliar',
+                id: 'membros', label: 'Membros / Ajudantes da Equipe', type: 'multiselect',
+                value: (existente?.membros || []).map(membro => typeof membro === 'object' ? membro.id : membro),
+                options: ajudantes.map(f => ({
+                    value: f.id,
+                    label: `${f.nome || 'Sem Nome'} — ${f.cargo || 'Ajudante'}`
+                })),
+                placeholder: 'Pesquisar ajudante...',
+                required: true,
                 fullWidth: true
             },
             {
@@ -1148,9 +1188,11 @@ function openModalEquipe(existente = null) {
             const payload = {
                 nome: data.nome.trim(),
                 motorista: data.motorista ? parseInt(data.motorista, 10) : null,
-                membros_info: data.membros_info || '',
+                membros: Array.from(new Set((data.membros || []).map(Number).filter(Number.isInteger))),
                 ativo: data.ativo !== 'false',
             };
+            if (payload.membros.length < 2)
+                throw new Error('Selecione pelo menos dois ajudantes para a equipe.');
 
             if (isEdit) {
                 await api.request(`/cadastros/equipes/${existente.id}/`, 'PATCH', payload);

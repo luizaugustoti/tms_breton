@@ -64,15 +64,47 @@ class PessoaEmpresaSerializer(serializers.ModelSerializer):
 
 class EquipeSerializer(serializers.ModelSerializer):
     motorista_nome = serializers.SerializerMethodField(read_only=True)
+    membros_nomes = serializers.SerializerMethodField(read_only=True)
+    membros = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Funcionario.objects.filter(ativo=True),
+        required=False,
+    )
 
     class Meta:
         model = Equipe
-        fields = ['id', 'nome', 'motorista', 'motorista_nome', 'membros_info', 'ativo']
+        fields = ['id', 'nome', 'motorista', 'motorista_nome', 'membros', 'membros_nomes', 'membros_info', 'ativo']
 
     def get_motorista_nome(self, obj):
         if obj.motorista:
             return f"{obj.motorista.first_name} {obj.motorista.last_name}".strip() or obj.motorista.username
         return None
+
+    def get_membros_nomes(self, obj):
+        return list(obj.membros.order_by('nome').values_list('nome', flat=True))
+
+    def validate(self, attrs):
+        membros = attrs.get('membros')
+        if membros is None and self.instance is not None:
+            membros = list(self.instance.membros.all())
+        if len(membros or []) < 2:
+            raise serializers.ValidationError({
+                'membros': 'A equipe deve ter pelo menos dois ajudantes.'
+            })
+        return attrs
+
+    def _atualizar_membros_info(self, validated_data):
+        membros = validated_data.get('membros')
+        if membros is not None:
+            validated_data['membros_info'] = ', '.join(membro.nome for membro in membros)
+
+    def create(self, validated_data):
+        self._atualizar_membros_info(validated_data)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        self._atualizar_membros_info(validated_data)
+        return super().update(instance, validated_data)
         
 VEICULO_DATE_FIELDS = (
     'data_compra', 'vigencia', 'validade_seguradora', 'data_venda', 'validade_antt',

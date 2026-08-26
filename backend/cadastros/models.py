@@ -105,6 +105,12 @@ class Equipe(models.Model):
         verbose_name="Motorista Principal"
     )
     membros_info = models.TextField(blank=True, default='', verbose_name="Membros/Ajudantes")
+    membros = models.ManyToManyField(
+        'Funcionario',
+        blank=True,
+        related_name='equipes_como_ajudante',
+        verbose_name='Membros/Ajudantes',
+    )
     ativo = models.BooleanField(default=True)
 
     def __str__(self):
