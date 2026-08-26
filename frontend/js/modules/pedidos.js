@@ -209,12 +209,26 @@ function criarSpinnerProcessamento(nomeArquivo) {
 }
 
 // --- TRATAMENTO E PREENCHIMENTO DA MINUTA ---
+function obterNumeroPedido(nota = {}) {
+    const valor = [
+        nota.numero_nota,
+        nota.numero_pedido,
+        nota.pedido_numero,
+        nota.numeroPedido,
+        nota.id_pedido,
+        nota.pedido_id,
+    ].find((item) => item !== null && item !== undefined && String(item).trim() !== '');
+
+    return valor === undefined ? '' : String(valor).trim();
+}
+
 function normalizeNotaPayload(nota = {}) {
     const dest = nota.destinatario || {};
     const endComp = nota.endereco_completo || {};
+    const numeroPedido = obterNumeroPedido(nota);
 
     const itens = (nota.produtos || nota.itens || []).map((it, idx) => ({
-        etiqueta: it.etiqueta || it.codigo || `${nota.numero_pedido || nota.numero || '0000'}-${String(idx + 1).padStart(3, '0')}`,
+        etiqueta: it.etiqueta || it.codigo || `${numeroPedido || '0000'}-${String(idx + 1).padStart(3, '0')}`,
         volumes: it.volumes || '01/01',
         qtd: it.quantidade || it.qtd || 1,
         descricao: it.descricao || it.desc || 'VOLUME DE MÓVEL',
@@ -224,7 +238,7 @@ function normalizeNotaPayload(nota = {}) {
 
     return {
         _pedido_id: nota.id || nota._pedido_id || null,
-        numero: nota.numero || nota.pedido_numero || '',
+        numero: numeroPedido,
         pedido_web: nota.pedido_web || '',
         ord_carregamento: nota.ord_carregamento || nota.ordem_carregamento || '',
         tipo_pedido: nota.tipo_pedido || nota.tipo_operacao || 'TROCA DE ASSISTENCIA',

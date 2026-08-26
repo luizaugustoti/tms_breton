@@ -606,7 +606,7 @@ async function atualizarOrdemRota(veiculoId, idsOrdenados) {
 
         if (rotaExistente) {
             await api.request(`/roteirizacao/rotas/${rotaExistente.id}/`, 'PATCH', {
-                pedidos: idsOrdenados
+                pedido_ids: idsOrdenados
             });
             showToast('Sequência de entrega atualizada para o motorista.', 'success');
         }
@@ -916,11 +916,11 @@ function renderManifestos() {
                         ${manifestoActionButton('excluir', rota.id, 'Excluir manifesto')}
                     </div>
                 </td>
-                <td>HOLDING PACHECO</td>
+                <td>${escapeHtml(rota.unidade_emissora || '—')}</td>
                 <td>${formatarDataBR(rota.data_rota)}</td>
-                <td></td>
-                <td></td>
-                <td>NÃO EMITIDO</td>
+                <td>${escapeHtml(rota.ciot || 'Não informado')}</td>
+                <td>${escapeHtml(rota.mdfe || 'Não informado')}</td>
+                <td>${escapeHtml(rota.status_mdfe || 'Não informado')}</td>
                 <td>${motoristaDaRota(rota) || '—'}</td>
                 <td>${rota.veiculo_placa || veiculo?.placa || '—'}</td>
                 <td>${rota.codigo || '—'}</td>
@@ -928,14 +928,14 @@ function renderManifestos() {
                 <td>${chegada || '—'}</td>
                 <td>${situacaoLabel(rota.status)}</td>
                 <td>—</td>
-                <td></td>
-                <td></td>
-                <td></td>
+                <td>${rota.km_inicial ?? '—'}</td>
+                <td>${rota.km_final ?? '—'}</td>
+                <td>${rota.km_inicial != null && rota.km_final != null ? Math.max(0, rota.km_final - rota.km_inicial) : '—'}</td>
                 <td>${tempoRota(resumo.saida, resumo.chegada) || '—'}</td>
                 <td>${resumo.coletas}</td>
                 <td>${resumo.entregas}</td>
                 <td><span class="mf-progress" title="${resumo.progresso}%"><span style="width:${resumo.progresso}%"></span></span> ${resumo.progresso}%</td>
-                <td></td>
+                <td>${escapeHtml(rota.xml_url || 'Não informado')}</td>
             </tr>`;
     }).join('');
 
@@ -971,13 +971,79 @@ function idsManifestosSelecionados() {
     return Array.from(document.querySelectorAll('.mf-check:checked')).map((el) => el.dataset.id);
 }
 
+function imprimirManifestosSelecionados() {
+    const ids = idsManifestosSelecionados();
+    const manifestos = (state.manifestosFiltrados || []).filter((rota) => ids.includes(String(rota.id)));
+    if (!manifestos.length) {
+        showToast('Selecione ao menos um manifesto para imprimir.', 'info');
+        return;
+    }
+
+    const conteudo = manifestos.map((rota) => {
+        const paradas = [...(rota.paradas || [])]
+            .filter((parada) => parada && parada.pedido)
+            .sort((a, b) => Number(a.sequencia || 0) - Number(b.sequencia || 0));
+        const resumo = resumoParadas(rota);
+        const veiculo = veiculoDaRota(rota);
+        return `
+            <section class="manifesto">
+                <h1>Manifesto ${escapeHtml(rota.codigo || rota.id || '')}</h1>
+                <div class="dados">
+                    <span><strong>Data:</strong> ${escapeHtml(formatarDataBR(rota.data_rota))}</span>
+                    <span><strong>Unidade:</strong> ${escapeHtml(rota.unidade_emissora || 'Não informado')}</span>
+                    <span><strong>Motorista:</strong> ${escapeHtml(motoristaDaRota(rota) || 'Não informado')}</span>
+                    <span><strong>Veículo:</strong> ${escapeHtml(rota.veiculo_placa || veiculo?.placa || 'Não informado')}</span>
+                    <span><strong>Situação:</strong> ${escapeHtml(situacaoLabel(rota.status))}</span>
+                    <span><strong>Pedidos:</strong> ${paradas.length}</span>
+                </div>
+                <table>
+                    <thead><tr><th>Seq.</th><th>Pedido</th><th>Cliente</th><th>Cidade</th><th>Tipo</th><th>Status</th></tr></thead>
+                    <tbody>${paradas.map((parada) => `
+                        <tr>
+                            <td>${escapeHtml(parada.sequencia)}</td>
+                            <td>${escapeHtml(parada.pedido.numero_nota || parada.pedido.pedido_web || parada.pedido.id || '—')}</td>
+                            <td>${escapeHtml(parada.pedido.cliente || '—')}</td>
+                            <td>${escapeHtml(parada.pedido.cidade || '—')}</td>
+                            <td>${escapeHtml(String(parada.pedido.tipo_operacao || 'ENTREGA').toUpperCase())}</td>
+                            <td>${escapeHtml(parada.status || 'PENDENTE')}</td>
+                        </tr>`).join('')}</tbody>
+                </table>
+                <p class="resumo">Coletas: ${resumo.coletas} | Entregas: ${resumo.entregas} | Progresso: ${resumo.progresso}%</p>
+            </section>`;
+    }).join('');
+
+    const janela = window.open('', '_blank', 'noopener,noreferrer');
+    if (!janela) {
+        showToast('Não foi possível abrir a janela de impressão. Verifique o bloqueador de pop-ups.', 'error');
+        return;
+    }
+    janela.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Manifestos</title>
+        <style>
+            body { font-family: Arial, sans-serif; color: #111; margin: 24px; }
+            .manifesto { page-break-after: always; }
+            .manifesto:last-child { page-break-after: auto; }
+            h1 { font-size: 20px; border-bottom: 2px solid #111; padding-bottom: 8px; }
+            .dados { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 20px; margin-bottom: 18px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #999; padding: 6px; text-align: left; }
+            th { background: #eee; }
+            .resumo { font-size: 12px; margin-top: 12px; }
+        </style></head><body>${conteudo}</body></html>`);
+    janela.document.close();
+    janela.focus();
+    janela.addEventListener('load', () => {
+        janela.print();
+        janela.close();
+    }, { once: true });
+}
+
 function initManifestoList() {
     document.getElementById('mfFiltros')?.addEventListener('submit', (event) => {
         event.preventDefault();
         renderManifestos();
     });
     document.getElementById('btnIncluirManifesto')?.addEventListener('click', abrirIncluirManifesto);
-    document.getElementById('btnImprimirManifestos')?.addEventListener('click', () => window.print());
+    document.getElementById('btnImprimirManifestos')?.addEventListener('click', imprimirManifestosSelecionados);
     document.getElementById('btnExcelManifestos')?.addEventListener('click', exportarManifestosExcel);
     document.getElementById('btnSaidaEfetiva')?.addEventListener('click', registrarSaidaEfetiva);
     document.getElementById('btnVoltarManifesto')?.addEventListener('click', fecharFormManifesto);
@@ -1149,6 +1215,9 @@ async function abrirIncluirManifesto() {
     state.formColetas = [];
     document.getElementById('incKmIni').value = '0';
     document.getElementById('incKmFim').value = '0';
+    document.getElementById('incUnidade').value = 'HOLDING PACHECO';
+    document.getElementById('incSemi').value = '';
+    document.getElementById('incGerenciadora').value = 'NENHUM';
     document.getElementById('incSaidaData').value = hojeISO();
     document.getElementById('incChegadaData').value = hojeISO();
     const agora = new Date();
@@ -1203,6 +1272,16 @@ function aplicarObservacoesNoFormulario(observacoes) {
     }
 }
 
+function combinarDataHora(data, hora) {
+    return data && hora ? `${data}T${hora}:00` : null;
+}
+
+function preencherDataHora(idData, idHora, valor) {
+    const texto = String(valor || '');
+    document.getElementById(idData).value = texto.slice(0, 10);
+    document.getElementById(idHora).value = texto.length >= 16 ? texto.slice(11, 16) : '';
+}
+
 function normalizarPedidoManifesto(pedido) {
     return {
         id: pedido.id,
@@ -1250,6 +1329,11 @@ async function abrirEditarManifesto(rota) {
     document.getElementById('incBuscaColeta').value = '';
     document.getElementById('incKmIni').value = '0';
     document.getElementById('incKmFim').value = '0';
+    document.getElementById('incUnidade').value = rotaAtual.unidade_emissora || 'HOLDING PACHECO';
+    document.getElementById('incSemi').value = String(rotaAtual.semireboque || '');
+    document.getElementById('incGerenciadora').value = rotaAtual.gerenciadora || 'NENHUM';
+    preencherDataHora('incSaidaData', 'incSaidaHora', rotaAtual.saida_prevista);
+    preencherDataHora('incChegadaData', 'incChegadaHora', rotaAtual.chegada_prevista);
     aplicarObservacoesNoFormulario(rotaAtual.observacoes);
 
     const paradasOrdenadas = [...(rotaAtual.paradas || [])]
@@ -1284,6 +1368,8 @@ function abrirVisualizarManifesto(rota) {
     const paradas = [...(rota.paradas || [])]
         .filter((parada) => parada && parada.pedido)
         .sort((a, b) => Number(a.sequencia || 0) - Number(b.sequencia || 0));
+    const veiculo = veiculoDaRota(rota);
+    const semireboque = state.veiculos.find((item) => String(item.id) === String(rota.semireboque || ''));
     const modal = document.createElement('div');
     modal.id = 'modalManifestoDetalhe';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -1295,10 +1381,19 @@ function abrirVisualizarManifesto(rota) {
             </div>
             <div style="padding:16px;display:grid;gap:14px;">
                 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:12px;">
-                    <div><strong>Data:</strong> ${formatarDataBR(rota.data_rota)}</div>
+                    <div><strong>Data:</strong> ${escapeHtml(formatarDataBR(rota.data_rota))}</div>
+                    <div><strong>Unidade:</strong> ${escapeHtml(rota.unidade_emissora || '—')}</div>
                     <div><strong>Motorista:</strong> ${escapeHtml(motoristaDaRota(rota) || '—')}</div>
-                    <div><strong>Veículo:</strong> ${escapeHtml(rota.veiculo_placa || veiculoDaRota(rota)?.placa || '—')}</div>
+                    <div><strong>Ajudante:</strong> ${escapeHtml(rota.ajudante_nome || '—')}</div>
+                    <div><strong>Equipe:</strong> ${escapeHtml(rota.equipe_nome || '—')}</div>
+                    <div><strong>Veículo:</strong> ${escapeHtml(rota.veiculo_placa || veiculo?.placa || '—')}</div>
+                    <div><strong>Semirreboque:</strong> ${escapeHtml(semireboque?.placa || '—')}</div>
+                    <div><strong>Gerenciadora:</strong> ${escapeHtml(rota.gerenciadora || '—')}</div>
+                    <div><strong>KM:</strong> ${escapeHtml(`${rota.km_inicial ?? '—'} / ${rota.km_final ?? '—'}`)}</div>
+                    <div><strong>Saída prevista:</strong> ${escapeHtml(rota.saida_prevista || '—')}</div>
+                    <div><strong>Chegada prevista:</strong> ${escapeHtml(rota.chegada_prevista || '—')}</div>
                 </div>
+                <div style="font-size:12px;"><strong>Observações:</strong> ${escapeHtml(rota.observacoes || '—')}</div>
                 <table class="mf-table" style="min-width:0;">
                     <thead>
                         <tr>
@@ -1493,6 +1588,19 @@ async function salvarFormManifesto(event) {
         const payload = {
             data_rota: document.getElementById('incSaidaData')?.value || hojeISO(),
             veiculo: Number(veiculo),
+            unidade_emissora: document.getElementById('incUnidade')?.value || '',
+            semireboque: document.getElementById('incSemi')?.value ? Number(document.getElementById('incSemi').value) : null,
+            gerenciadora: document.getElementById('incGerenciadora')?.value || '',
+            km_inicial: Number(document.getElementById('incKmIni')?.value || 0),
+            km_final: Number(document.getElementById('incKmFim')?.value || 0),
+            saida_prevista: combinarDataHora(
+                document.getElementById('incSaidaData')?.value,
+                document.getElementById('incSaidaHora')?.value
+            ),
+            chegada_prevista: combinarDataHora(
+                document.getElementById('incChegadaData')?.value,
+                document.getElementById('incChegadaHora')?.value
+            ),
             motorista: Number(motorista.usuario_id),
             ajudante: ajudante?.usuario_id ? Number(ajudante.usuario_id) : null,
             equipe: equipeDoMotorista ? equipeDoMotorista.id : null,
@@ -1502,11 +1610,12 @@ async function salvarFormManifesto(event) {
                 `Ajudante ${ajudante ? nomeFuncionario(ajudante) : 'NENHUM'}`,
                 `KM ${document.getElementById('incKmIni')?.value || 0}-${document.getElementById('incKmFim')?.value || 0}`,
             ].join('; '),
-            pedido_ids: ids,
         };
         if (!state.manifestoEditandoId) {
             payload.codigo = `MF-${hojeISO().replace(/-/g, '')}-${veiculo}-${Date.now().toString().slice(-4)}`;
             payload.status = 'PLANEJADA';
+        } else {
+            payload.pedido_ids = ids;
         }
 
         const rota = state.manifestoEditandoId
@@ -1530,7 +1639,7 @@ function exportarManifestosExcel() {
         const resumo = resumoParadas(rota);
         return [
             rota.id,
-            'HOLDING PACHECO',
+            rota.unidade_emissora || '—',
             formatarDataBR(rota.data_rota),
             motoristaDaRota(rota),
             rota.veiculo_placa || '',

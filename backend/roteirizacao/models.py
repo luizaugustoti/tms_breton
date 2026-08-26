@@ -33,6 +33,20 @@ class Rota(models.Model):
         related_name='rotas_como_ajudante',
         verbose_name="Ajudante",
     )
+    unidade_emissora = models.CharField(max_length=100, blank=True, default='', verbose_name="Unidade Emissora")
+    semireboque = models.ForeignKey(
+        Veiculo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='rotas_como_semireboque',
+        verbose_name="Semirreboque",
+    )
+    gerenciadora = models.CharField(max_length=100, blank=True, default='', verbose_name="Gerenciadora")
+    km_inicial = models.PositiveIntegerField(default=0, verbose_name="KM Inicial")
+    km_final = models.PositiveIntegerField(default=0, verbose_name="KM Final")
+    saida_prevista = models.DateTimeField(null=True, blank=True, verbose_name="Saída Prevista")
+    chegada_prevista = models.DateTimeField(null=True, blank=True, verbose_name="Chegada Prevista")
     
     status = models.CharField(max_length=20, choices=STATUS_ROTA, default='PLANEJADA', verbose_name="Status")
     observacoes = models.TextField(blank=True, null=True, verbose_name="Observações")
@@ -88,6 +102,12 @@ class ParadaRota(models.Model):
         verbose_name = "Parada da Rota"
         verbose_name_plural = "Paradas da Rota"
         ordering = ['rota', 'sequencia']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['rota', 'pedido'],
+                name='unique_pedido_por_rota',
+            ),
+        ]
 
     def __str__(self):
         return f"Parada {self.sequencia} - Pedido {self.pedido.id} ({self.rota.codigo})"

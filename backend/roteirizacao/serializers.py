@@ -48,6 +48,8 @@ class RotaSerializer(serializers.ModelSerializer):
         model = Rota
         fields = [
             'id', 'codigo', 'data_rota', 'veiculo', 'veiculo_placa',
+            'unidade_emissora', 'semireboque', 'gerenciadora',
+            'km_inicial', 'km_final', 'saida_prevista', 'chegada_prevista',
             'equipe', 'equipe_nome', 'motorista', 'motorista_nome',
             'ajudante', 'ajudante_nome', 'status', 'observacoes',
             'paradas', 'total_pedidos', 'total_peso', 'total_volume',

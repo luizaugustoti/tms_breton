@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
+from django.db import transaction
 from .models import Pedido
 from .serializers import PedidoSerializer
 import re
@@ -128,6 +129,13 @@ class PedidoViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         pedido = serializer.save()
         self._garantir_no_backlog(pedido)
+
+    def perform_destroy(self, instance):
+        from roteirizacao.models import ParadaRota
+
+        with transaction.atomic():
+            ParadaRota.objects.filter(pedido=instance).delete()
+            super().perform_destroy(instance)
 
     @action(detail=False, methods=['POST'], url_path='importa-nota')
     def importa_nota(self, request):
