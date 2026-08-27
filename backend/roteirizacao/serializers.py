@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Rota, ParadaRota
 from pedidos.serializers import PedidoSerializer
+from cadastros.models import Funcionario
 
 Usuario = get_user_model()
 
@@ -38,6 +39,11 @@ class RotaSerializer(serializers.ModelSerializer):
     ajudante = serializers.PrimaryKeyRelatedField(
         queryset=Usuario.objects.all(), required=False, allow_null=True
     )
+    ajudantes = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Funcionario.objects.filter(ativo=True),
+        required=False,
+    )
     motorista_nome = serializers.SerializerMethodField()
     ajudante_nome = serializers.SerializerMethodField()
     total_pedidos = serializers.SerializerMethodField()
@@ -51,7 +57,7 @@ class RotaSerializer(serializers.ModelSerializer):
             'unidade_emissora', 'semireboque', 'gerenciadora',
             'km_inicial', 'km_final', 'saida_prevista', 'chegada_prevista',
             'equipe', 'equipe_nome', 'motorista', 'motorista_nome',
-            'ajudante', 'ajudante_nome', 'status', 'observacoes',
+            'ajudante', 'ajudante_nome', 'ajudantes', 'status', 'observacoes',
             'paradas', 'total_pedidos', 'total_peso', 'total_volume',
             'criado_em', 'atualizado_em'
         ]

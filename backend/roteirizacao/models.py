@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from cadastros.models import Veiculo, Equipe
+from cadastros.models import Veiculo, Equipe, Funcionario
 from pedidos.models import Pedido
 
 class Rota(models.Model):
@@ -32,6 +32,12 @@ class Rota(models.Model):
         blank=True,
         related_name='rotas_como_ajudante',
         verbose_name="Ajudante",
+    )
+    ajudantes = models.ManyToManyField(
+        Funcionario,
+        blank=True,
+        related_name='rotas_como_ajudante',
+        verbose_name="Ajudantes",
     )
     unidade_emissora = models.CharField(max_length=100, blank=True, default='', verbose_name="Unidade Emissora")
     semireboque = models.ForeignKey(

@@ -1077,6 +1077,8 @@ function initManifestoList() {
         document.getElementById('incMotorista')?.focus();
         showToast('Os motoristas vêm do cadastro de funcionários.', 'info');
     });
+    document.getElementById('incEquipe')?.addEventListener('change', aplicarEquipeNoFormulario);
+    initAjudantesSelector();
 }
 
 function mostrarFormManifesto(aberto) {
@@ -1114,6 +1116,119 @@ function funcionariosMotoristas() {
 function funcionariosAjudantes() {
     const lista = state.funcionarios.filter((f) => f.ativo !== false && /ajudante/.test(cargoFuncionario(f)));
     return lista.length ? lista : state.funcionarios.filter((f) => f.ativo !== false && !/motorista/.test(cargoFuncionario(f)));
+}
+
+function equipePorId(id) {
+    return state.equipes.find((e) => String(e.id) === String(id));
+}
+
+function renderAjudantesSelector() {
+    const select = document.getElementById('incAjudantes');
+    const options = document.getElementById('ajudantesOptions');
+    const summary = document.getElementById('ajudantesSummary');
+    const count = document.getElementById('ajudantesCount');
+    if (!select || !options || !summary || !count) return;
+
+    const selecionados = Array.from(select.selectedOptions);
+    summary.textContent = selecionados.length
+        ? selecionados.map((option) => option.textContent).join(', ')
+        : 'Nenhum ajudante selecionado';
+    count.textContent = `${selecionados.length} selecionado${selecionados.length === 1 ? '' : 's'}`;
+    options.innerHTML = Array.from(select.options)
+        .filter((option) => option.value)
+        .map((option) => {
+            const selected = option.selected;
+            return `
+                <button type="button" class="mf-multiselect__option${selected ? ' is-selected' : ''}"
+                    data-value="${option.value}" role="checkbox" aria-checked="${selected}">
+                    <span class="mf-multiselect__check" aria-hidden="true">✓</span>
+                    <span class="mf-multiselect__option-text">${option.textContent}</span>
+                </button>`;
+        }).join('');
+
+    options.querySelectorAll('[data-value]').forEach((optionButton) => {
+        optionButton.addEventListener('click', () => {
+            const option = Array.from(select.options)
+                .find((item) => item.value === optionButton.dataset.value);
+            if (!option) return;
+            option.selected = !option.selected;
+            renderAjudantesSelector();
+        });
+    });
+}
+
+function initAjudantesSelector() {
+    const trigger = document.getElementById('ajudantesTrigger');
+    const panel = document.getElementById('ajudantesPanel');
+    const selector = document.getElementById('ajudantesSelector');
+    if (!trigger || !panel || !selector || selector.dataset.initialized === 'true') return;
+    selector.dataset.initialized = 'true';
+    trigger.addEventListener('click', () => {
+        const aberto = panel.hidden;
+        panel.hidden = !aberto;
+        trigger.setAttribute('aria-expanded', String(aberto));
+    });
+    document.addEventListener('click', (event) => {
+        if (!selector.contains(event.target)) {
+            panel.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+    });
+    renderAjudantesSelector();
+}
+
+function idsDosMembrosDaEquipe(equipe) {
+    const membros = Array.isArray(equipe?.membros) ? equipe.membros : [];
+    const ids = membros
+        .map((membro) => {
+            if (membro && typeof membro === 'object') {
+                return membro.id || membro.funcionario_id;
+            }
+            return membro;
+        })
+        .filter((id) => id !== undefined && id !== null && String(id) !== '');
+    if (ids.length) return ids.map(String);
+
+    // Compatibilidade com respostas antigas que retornam somente os nomes.
+    const nomes = Array.isArray(equipe?.membros_nomes) ? equipe.membros_nomes : [];
+    return state.funcionarios
+        .filter((funcionario) => nomes.some((nome) =>
+            nomeFuncionario(funcionario).toLowerCase() === String(nome).trim().toLowerCase()
+        ))
+        .map((funcionario) => String(funcionario.id));
+}
+
+async function aplicarEquipeNoFormulario() {
+    const equipeId = document.getElementById('incEquipe')?.value || '';
+    const motoristaSelect = document.getElementById('incMotorista');
+    const ajudantesSelect = document.getElementById('incAjudantes');
+    const veiculoSelect = document.getElementById('incVeiculo');
+    const semiSelect = document.getElementById('incSemi');
+    if (!equipeId) {
+        if (motoristaSelect) motoristaSelect.value = '';
+        if (ajudantesSelect) Array.from(ajudantesSelect.options).forEach((option) => { option.selected = false; });
+        if (veiculoSelect) veiculoSelect.value = '';
+        if (semiSelect) semiSelect.value = '';
+        renderAjudantesSelector();
+        return;
+    }
+    let equipe = equipePorId(equipeId);
+    try {
+        equipe = await api.request(`/cadastros/equipes/${equipeId}/`, 'GET');
+    } catch (err) {
+        showToast(err?.message || 'Não foi possível carregar os dados da equipe.', 'error');
+        return;
+    }
+    const motorista = state.funcionarios.find((f) => String(f.usuario_id || '') === String(equipe.motorista || ''));
+    const membros = idsDosMembrosDaEquipe(equipe);
+    const veiculosEquipe = state.veiculos.filter((v) => String(v.equipe || v.equipe_id || '') === String(equipe.id));
+    const veiculo = veiculosEquipe.find((v) => !/semi|reboque/i.test(`${v.tipo_equipamento || ''} ${v.modelo || ''}`)) || veiculosEquipe[0];
+    const semi = veiculosEquipe.find((v) => /semi|reboque/i.test(`${v.tipo_equipamento || ''} ${v.modelo || ''}`));
+    if (motoristaSelect) motoristaSelect.value = motorista ? String(motorista.id) : '';
+    if (ajudantesSelect) Array.from(ajudantesSelect.options).forEach((option) => { option.selected = membros.includes(option.value); });
+    if (veiculoSelect) veiculoSelect.value = veiculo ? String(veiculo.id) : '';
+    if (semiSelect) semiSelect.value = semi ? String(semi.id) : '';
+    renderAjudantesSelector();
 }
 
 function veiculosCadastro(tipoFrota = '') {
@@ -1169,6 +1284,11 @@ function preencherSelect(el, vazio, itens) {
 
 function preencherSelectsForm() {
     preencherSelect(
+        document.getElementById('incEquipe'),
+        state.equipes.length ? 'NENHUMA EQUIPE' : 'Nenhuma equipe no cadastro',
+        state.equipes.filter((e) => e.ativo !== false).map((e) => ({ value: e.id, label: e.nome }))
+    );
+    preencherSelect(
         document.getElementById('incMotorista'),
         state.funcionarios.length ? 'NENHUM DEFINIDO' : 'Nenhum motorista no cadastro',
         funcionariosMotoristas().map((f) => ({
@@ -1184,6 +1304,7 @@ function preencherSelectsForm() {
             label: `${nomeFuncionario(f)}${f.cpf ? ` — ${f.cpf}` : ''}${f.usuario_id ? '' : ' (sem acesso ao app)'}`,
         }))
     );
+    renderAjudantesSelector();
     const veiculos = veiculosCadastro('PROPRIA');
     const listaVeiculo = (veiculos.length ? veiculos : veiculosCadastro()).map((v) => ({
         value: v.id,
@@ -1216,6 +1337,11 @@ async function abrirIncluirManifesto() {
     document.getElementById('incKmIni').value = '0';
     document.getElementById('incKmFim').value = '0';
     document.getElementById('incUnidade').value = 'HOLDING PACHECO';
+    document.getElementById('incEquipe').value = '';
+    document.getElementById('incMotorista').value = '';
+    Array.from(document.getElementById('incAjudantes').options).forEach((option) => { option.selected = false; });
+    renderAjudantesSelector();
+    document.getElementById('incVeiculo').value = '';
     document.getElementById('incSemi').value = '';
     document.getElementById('incGerenciadora').value = 'NENHUM';
     document.getElementById('incSaidaData').value = hojeISO();
@@ -1354,7 +1480,15 @@ async function abrirEditarManifesto(rota) {
     const veiculoEdit = state.veiculos.find((v) => String(v.id) === String(rotaAtual.veiculo || rotaAtual.veiculo_id || ''));
     if (document.getElementById('incVeiculo')) document.getElementById('incVeiculo').value = veiculoEdit ? String(veiculoEdit.id) : String(rotaAtual.veiculo || rotaAtual.veiculo_id || '');
     if (document.getElementById('incMotorista')) document.getElementById('incMotorista').value = motoristaEdit ? String(motoristaEdit.id) : '';
-    if (document.getElementById('incAjudantes')) document.getElementById('incAjudantes').value = ajudanteEdit ? String(ajudanteEdit.id) : '';
+    if (document.getElementById('incEquipe')) document.getElementById('incEquipe').value = String(rotaAtual.equipe || rotaAtual.equipe_id || '');
+    if (document.getElementById('incAjudantes')) {
+        const ajudantes = (rotaAtual.ajudantes || []).map((item) => String(typeof item === 'object' ? item.id : item));
+        if (!ajudantes.length && ajudanteEdit) ajudantes.push(String(ajudanteEdit.id));
+        Array.from(document.getElementById('incAjudantes').options).forEach((option) => {
+            option.selected = ajudantes.includes(option.value);
+        });
+        renderAjudantesSelector();
+    }
     renderFormTabelas();
     mostrarFormManifesto(true);
 }
@@ -1560,7 +1694,9 @@ async function salvarFormManifesto(event) {
     event.preventDefault();
     const veiculo = document.getElementById('incVeiculo')?.value;
     const motoristaId = document.getElementById('incMotorista')?.value;
-    const ajudanteId = document.getElementById('incAjudantes')?.value;
+    const ajudanteIds = Array.from(document.getElementById('incAjudantes')?.selectedOptions || [])
+        .map((option) => Number(option.value)).filter(Number.isInteger);
+    const ajudanteId = ajudanteIds[0] || '';
     if (!veiculo) {
         showToast('Selecione o veículo do cadastro.', 'error');
         return;
@@ -1575,7 +1711,8 @@ async function salvarFormManifesto(event) {
         showToast('Este motorista precisa de usuário de acesso ao aplicativo. Cadastre o login em Colaboradores.', 'error');
         return;
     }
-    const equipeDoMotorista = state.equipes.find((eq) => (
+    const equipeSelecionada = equipePorId(document.getElementById('incEquipe')?.value);
+    const equipeDoMotorista = equipeSelecionada || state.equipes.find((eq) => (
         String(eq.motorista) === String(motorista?.usuario_id || '') ||
         String(eq.motorista_nome || '').toLowerCase() === nomeFuncionario(motorista || {}).toLowerCase()
     ));
@@ -1603,11 +1740,12 @@ async function salvarFormManifesto(event) {
             ),
             motorista: Number(motorista.usuario_id),
             ajudante: ajudante?.usuario_id ? Number(ajudante.usuario_id) : null,
+            ajudantes: ajudanteIds,
             equipe: equipeDoMotorista ? equipeDoMotorista.id : null,
             observacoes: [
                 `Unidade ${document.getElementById('incUnidade')?.value || ''}`,
                 `Motorista ${nomeFuncionario(motorista || { nome: '' })}`,
-                `Ajudante ${ajudante ? nomeFuncionario(ajudante) : 'NENHUM'}`,
+                `Ajudantes ${ajudanteIds.map((id) => nomeFuncionario(state.funcionarios.find((f) => Number(f.id) === id) || {})).join(', ') || 'NENHUM'}`,
                 `KM ${document.getElementById('incKmIni')?.value || 0}-${document.getElementById('incKmFim')?.value || 0}`,
             ].join('; '),
         };

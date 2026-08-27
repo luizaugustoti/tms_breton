@@ -449,6 +449,10 @@
                             </select>
                         </div>
                         <div class="mf-field">
+                            <label>EQUIPE</label>
+                            <select id="incEquipe"><option value="">NENHUMA EQUIPE</option></select>
+                        </div>
+                        <div class="mf-field">
                             <label>MOTORISTA(S)</label>
                             <div class="mf-plus">
                                 <select id="incMotorista"><option value="">NENHUM DEFINIDO</option></select>
@@ -457,7 +461,23 @@
                         </div>
                         <div class="mf-field">
                             <label>AJUDANTES</label>
-                            <select id="incAjudantes"><option value="">NENHUM</option></select>
+                            <div class="mf-multiselect" id="ajudantesSelector">
+                                <button type="button" class="mf-multiselect__trigger" id="ajudantesTrigger"
+                                    aria-expanded="false" aria-controls="ajudantesPanel">
+                                    <span id="ajudantesSummary">Nenhum ajudante selecionado</span>
+                                    <span class="mf-multiselect__chevron" aria-hidden="true">▾</span>
+                                </button>
+                                <div class="mf-multiselect__panel" id="ajudantesPanel" hidden>
+                                    <div class="mf-multiselect__header">
+                                        <strong>Selecione os ajudantes</strong>
+                                        <span id="ajudantesCount">0 selecionados</span>
+                                    </div>
+                                    <div class="mf-multiselect__options" id="ajudantesOptions"
+                                        role="group" aria-label="Ajudantes disponíveis"></div>
+                                </div>
+                                <select id="incAjudantes" class="mf-multiselect__native" multiple
+                                    aria-hidden="true" tabindex="-1"></select>
+                            </div>
                         </div>
                         <div class="mf-field">
                             <label>VEICULO</label>
