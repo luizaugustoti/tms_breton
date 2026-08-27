@@ -58,6 +58,39 @@ class Pedido(models.Model):
     def __str__(self):
         return f"Pedido {self.numero_nota} - {self.cliente}"
 
+
+class PedidoHistorico(models.Model):
+    """Registro imutável das mudanças observadas no ciclo de vida do pedido."""
+
+    TIPO_CHOICES = (
+        ('CRIACAO', 'Criação'),
+        ('STATUS', 'Status'),
+        ('ALOCACAO', 'Alocação'),
+        ('ROTEIRIZACAO', 'Roteirização'),
+        ('ALTERACAO', 'Alteração'),
+        ('EVIDENCIA', 'Evidência'),
+    )
+
+    pedido = models.ForeignKey(
+        Pedido, on_delete=models.CASCADE, related_name='historico'
+    )
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    descricao = models.CharField(max_length=255)
+    status_anterior = models.CharField(max_length=50, blank=True, null=True)
+    status_novo = models.CharField(max_length=50, blank=True, null=True)
+    dados = models.JSONField(default=dict, blank=True)
+    ocorrido_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-ocorrido_em', '-id']
+        indexes = [
+            models.Index(fields=['pedido', '-ocorrido_em']),
+        ]
+
+    def __str__(self):
+        return f"{self.pedido} - {self.tipo} - {self.ocorrido_em}"
+
+
 class ItemPedido(models.Model):
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='itens')
     produto = models.ForeignKey(ProdutoEstoque, on_delete=models.PROTECT, null=True, blank=True)

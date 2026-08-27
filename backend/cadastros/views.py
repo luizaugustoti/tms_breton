@@ -1,4 +1,6 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Veiculo, Equipe, Funcionario, PessoaEmpresa
 from .serializers import VeiculoSerializer, FuncionarioSerializer, UsuarioSerializer, EquipeSerializer, PessoaEmpresaSerializer
@@ -45,3 +47,17 @@ class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all().order_by('first_name')
     serializer_class = UsuarioSerializer
     permission_classes = [CanManageUsers]
+
+    @action(detail=True, methods=['post'], url_path='redefinir-senha')
+    def redefinir_senha(self, request, pk=None):
+        usuario = self.get_object()
+        senha = str(request.data.get('senha') or '').strip()
+        if len(senha) < 8:
+            return Response(
+                {'detail': 'A senha deve ter no mínimo 8 caracteres.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        usuario.set_password(senha)
+        usuario.save(update_fields=['password'])
+        return Response({'detail': 'Senha redefinida com sucesso.'})

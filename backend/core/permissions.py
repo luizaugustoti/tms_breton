@@ -4,6 +4,8 @@ FULL_ACCESS_ROLES = {'TI', 'Admin'}
 MOTORISTA_PORTAL_ROLES = {'Motorista', 'Ajudante'}
 
 ROLE_ALIASES = {
+    'administrador': 'Admin',
+    'administrador do sistema': 'Admin',
     'gestor operacional': 'Gestor',
     'gestor': 'Gestor',
     'operacional': 'Operacional',
@@ -43,6 +45,9 @@ class CanManageUsers(BasePermission):
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
+
+        if request.user.is_superuser or request.user.is_staff:
+            return True
 
         if user_has_role(request.user, FULL_ACCESS_ROLES):
             return True

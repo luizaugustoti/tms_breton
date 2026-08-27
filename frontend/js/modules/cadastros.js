@@ -28,6 +28,8 @@ function normalizeRole(value) {
     if (!value) return '';
     const normalized = String(value).trim().toLowerCase().replace(/[_-]/g, ' ');
     const aliases = {
+        'administrador': 'Admin',
+        'administrador do sistema': 'Admin',
         'gestor operacional': 'Gestor',
         'gestor': 'Gestor',
         'operacional': 'Operacional',
@@ -40,7 +42,9 @@ function normalizeRole(value) {
 }
 
 function canManageUsers() {
-    const currentRole = normalizeRole(authStorage.getUser()?.role || authStorage.getUser()?.cargo || '');
+    const user = authStorage.getUser() || {};
+    if (user.is_staff || user.is_superuser) return true;
+    const currentRole = normalizeRole(user.role || user.cargo || '');
     return ['TI', 'Admin'].includes(currentRole);
 }
 
@@ -354,6 +358,10 @@ function actionButtons(id, editClass, deleteClass) {
         </td>`;
 }
 
+function redefinirSenhaButton(id) {
+    return `<button class="btn-action btn-reset-password" data-id="${id}" title="Redefinir senha" data-icon="lock">Redefinir senha</button>`;
+}
+
 function attachEvents(tbodyId, editSel, deleteSel, cache, openFn, endpoint) {
     const tbody = document.getElementById(tbodyId);
     if (!tbody) return;
@@ -409,11 +417,64 @@ function renderUsuariosTable(data) {
             <td><small>${row.email || '—'}</small></td>
             <td><span class="badge badge--vinho">${perfilLabel}</span></td>
             <td>${statusBadge(ativo ? 'Ativo' : 'Inativo')}</td>
-            ${actionButtons(row.id, 'btn-edit-usuario', 'btn-del-usuario')}`;
+            <td>
+                <div class="btn-row">
+                    <button class="btn-action btn-edit btn-edit-usuario" data-id="${row.id}" title="Editar" data-icon="pencil">Editar</button>
+                    ${redefinirSenhaButton(row.id)}
+                    <button class="btn-action btn-delete btn-del-usuario" data-id="${row.id}" title="Excluir" data-icon="trash">Excluir</button>
+                </div>
+            </td>`;
     }, 5);
 
     attachEvents('tableUsuariosBody', 'btn-edit-usuario', 'btn-del-usuario',
         usuariosCache, openModalUsuario, '/cadastros/usuarios/');
+    document.querySelectorAll('#tableUsuariosBody .btn-reset-password').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const usuario = usuariosCache.find(item => String(item.id) === String(btn.dataset.id));
+            if (usuario) openModalRedefinirSenha(usuario);
+        });
+    });
+}
+
+function openModalRedefinirSenha(usuario) {
+    if (!canManageUsers()) {
+        showToast('Seu perfil não tem permissão para redefinir senhas.', 'error');
+        return;
+    }
+
+    openModal({
+        title: 'Redefinir senha',
+        confirmLabel: 'Redefinir senha',
+        fields: [
+            {
+                id: 'senha',
+                label: 'Nova senha',
+                type: 'password',
+                placeholder: 'Mínimo 8 caracteres',
+                required: true,
+            },
+            {
+                id: 'confirmar_senha',
+                label: 'Confirmar nova senha',
+                type: 'password',
+                placeholder: 'Digite a senha novamente',
+                required: true,
+            },
+        ],
+        onConfirm: async (data) => {
+            const senha = String(data.senha || '').trim();
+            const confirmacao = String(data.confirmar_senha || '').trim();
+            if (senha.length < MIN_PASSWORD_LENGTH) {
+                throw new Error(`A nova senha deve ter no mínimo ${MIN_PASSWORD_LENGTH} caracteres.`);
+            }
+            if (senha !== confirmacao) {
+                throw new Error('A confirmação da senha não confere.');
+            }
+
+            await api.request(`/cadastros/usuarios/${usuario.id}/redefinir-senha/`, 'POST', { senha });
+            return { mensagem: `Senha de ${usuario.nome || usuario.username || 'usuário'} redefinida com sucesso!` };
+        },
+    });
 }
 
 // ─────────────────────────────────────────────────────────────

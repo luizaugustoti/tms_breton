@@ -1,9 +1,11 @@
-import { api, authService, getApiBaseUrl } from '../api/api.js?v=17';
+import { api, authService, getApiBaseUrl } from '../api/api.js?v=18';
 import { checkAuth } from '../utils/auth-guard.js';
-import { showToast } from '../utils/modal.js';
+import { openModal, showToast } from '../utils/modal.js';
 
 const API_BASE_URL = getApiBaseUrl();
 let pedidosCache = [];
+const evidenciasPreview = new Map();
+let proximoIdEvidencia = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!checkAuth()) return;
@@ -18,6 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
     initAcoesPedidos();
     initMinutaForm();
     initViewsOperacional();
+    document.addEventListener('click', (event) => {
+        const botao = event.target.closest('[data-evidence-preview]');
+        if (!botao) return;
+        event.preventDefault();
+        abrirEvidencia(evidenciasPreview.get(botao.dataset.evidencePreview));
+    });
 });
 
 // --- CONTROLE DE INTERFACE E VISÕES ---
@@ -256,6 +264,7 @@ function normalizeNotaPayload(nota = {}) {
         placa_veiculo: nota.placa_veiculo || nota.placa || '',
         observacao: nota.observacao || nota.obs || '',
         recebido_por: nota.recebido_por || '',
+        historico_entrega: nota.historico || nota.historico_entrega || nota.historico_eventos || [],
         itens,
     };
 }
@@ -312,6 +321,32 @@ function addNotaRow(item = {}) {
     somarTransportado();
 }
 
+function renderHistoricoTabela(eventos) {
+    const tbody = document.getElementById('mnHistoricoBody');
+    if (!tbody) return;
+    const lista = Array.isArray(eventos) ? [...eventos].sort((a, b) =>
+        new Date(a.timestamp || a.ocorrido_em || a.data_hora || a.data || 0) - new Date(b.timestamp || b.ocorrido_em || b.data_hora || b.data || 0)
+    ) : [];
+    tbody.innerHTML = lista.length ? lista.map(evento => {
+        const data = evento.timestamp || evento.ocorrido_em || evento.data_hora || evento.data;
+        const evidencias = evento.evidencias || evento.anexos || evento.dados?.evidencias || [];
+        const anexos = Array.isArray(evidencias) && evidencias.length
+            ? evidencias.map(item => {
+                const nome = item.nome || item.filename || 'Evidência';
+                const url = normalizarUrlEvidencia(item);
+                return url ? criarAcaoEvidencia(item, nome, url) : escapeHtml(nome);
+            }).join(', ')
+            : '—';
+        return `<tr>
+            <td>${escapeHtml(evento.titulo || evento.descricao || evento.tipo || evento.etapa || 'Evento')}</td>
+            <td>${escapeHtml(data ? new Date(data).toLocaleString('pt-BR') : '—')}</td>
+            <td>${anexos}</td>
+            <td>${escapeHtml(evento.observacao || evento.observacoes_entrega || '—')}</td>
+            <td>${escapeHtml(evento.status_novo || evento.status || '')}</td>
+        </tr>`;
+    }).join('') : '<tr><td colspan="5" class="pedido-history-empty">Nenhum evento registrado para este pedido.</td></tr>';
+}
+
 function somarTransportado() {
     const rows = Array.from(document.querySelectorAll('#mnNotasBody tr'));
     let qtdEtiquetas = rows.length;
@@ -364,6 +399,7 @@ function preencherMinuta(nota) {
         addNotaRow();
     }
     somarTransportado();
+    renderHistoricoTabela(nota.historico_entrega || []);
 }
 
 function abrirEmissaoManual() {
@@ -464,6 +500,7 @@ async function loadPedidosData() {
 
         pedidosCache = rawData.map(p => ({
             id: p.id || p.pedido_numero,
+            dados: p,
             pedido_numero: p.numero_nota || p.pedido_numero || p.numero || '—',
             cliente_nome: p.cliente || p.cliente_nome || '—',
             cidade_uf: [p.cidade, p.uf].filter(Boolean).join('/') || p.cidade_uf || '—',
@@ -498,12 +535,17 @@ function renderPedidosTable(data) {
             <td><span class="badge badge--accent">${escapeHtml(row.status)}</span></td>
             <td>
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn-editar" data-id="${row.id}" title="Editar" style="background:none; border:none; cursor:pointer;">✏️</button>
-                    <button class="btn-excluir" data-id="${row.id}" title="Excluir" style="background:none; border:none; cursor:pointer;">🗑️</button>
+                    <button class="btn-visualizar btn-icon-action" data-id="${row.id}" title="Visualizar pedido" aria-label="Visualizar pedido" data-icon="eye"></button>
+                    <button class="btn-editar btn-icon-action" data-id="${row.id}" title="Editar pedido" aria-label="Editar pedido" data-icon="pencil"></button>
+                    <button class="btn-excluir btn-icon-action" data-id="${row.id}" title="Excluir pedido" aria-label="Excluir pedido" data-icon="trash"></button>
                 </div>
             </td>
         </tr>
     `).join('');
+
+    tbody.querySelectorAll('.btn-visualizar').forEach(btn => {
+        btn.addEventListener('click', () => abrirVisualizacaoPedido(btn.dataset.id));
+    });
 
     tbody.querySelectorAll('.btn-editar').forEach(btn => {
         btn.addEventListener('click', async (e) => {
@@ -523,6 +565,185 @@ function renderPedidosTable(data) {
                 await loadPedidosData();
             }
         });
+    });
+}
+
+async function abrirVisualizacaoPedido(id) {
+    try {
+        const pedido = await api.request(`/pedidos/${id}/`, 'GET');
+        let historico = [
+            ...(Array.isArray(pedido.historico) ? pedido.historico : []),
+            ...(Array.isArray(pedido.historico_entrega) ? pedido.historico_entrega : []),
+        ];
+        try {
+            const respostaHistorico = await api.request(`/pedidos/${id}/historico/`, 'GET');
+            const eventosPersistidos = respostaHistorico?.items || respostaHistorico?.results || respostaHistorico;
+            if (Array.isArray(eventosPersistidos)) historico = [...eventosPersistidos, ...(pedido.historico_entrega || [])];
+        } catch (erroHistorico) {
+            if (erroHistorico?.status !== 404) throw erroHistorico;
+        }
+        historico = dedupeHistorico(historico);
+
+        openModal({
+            title: `Visualizar pedido #${pedido.numero_nota || pedido.id}`,
+            confirmLabel: 'Fechar',
+            fields: [{
+                id: 'visualizacao',
+                type: 'html',
+                fullWidth: true,
+                content: renderVisualizacaoPedido(pedido, historico),
+            }],
+            onConfirm: async () => ({ mensagem: '' }),
+        });
+    } catch (erro) {
+        showToast(erro?.message || 'Não foi possível carregar os detalhes do pedido.', 'error');
+    }
+}
+
+function renderVisualizacaoPedido(pedido, historico) {
+    const veiculo = pedido.veiculo_detalhes || pedido.veiculo_info || {};
+    const motorista = pedido.motorista_nome || pedido.motorista?.nome || pedido.motorista || '—';
+    const volumeCalculado = (pedido.itens || []).reduce((total, item) => total + (Number(item.quantidade) || 0), 0);
+    const volumes = Number(pedido.volume_total) > 0 ? pedido.volume_total : volumeCalculado || 'Não informado';
+    const eventos = Array.isArray(historico) ? [...historico].sort((a, b) =>
+        new Date(b.timestamp || b.ocorrido_em || b.data_hora || b.data || 0) - new Date(a.timestamp || a.ocorrido_em || a.data_hora || a.data || 0)
+    ) : [];
+
+    return `
+        <div class="pedido-view">
+            <div class="pedido-view__eyebrow">Consulta operacional</div>
+            <div class="pedido-view__title-row">
+                <div>
+                    <h3>Pedido #${escapeHtml(pedido.numero_nota || pedido.id)}</h3>
+                    <p>${escapeHtml(pedido.loja || 'Manifesto de chegada')}</p>
+                </div>
+                <span class="pedido-view__status pedido-view__status--${statusClass(pedido.status)}">${escapeHtml(pedido.status || 'Não informado')}</span>
+            </div>
+            <div class="pedido-view__summary">
+                <div><strong>Cliente</strong><span>${escapeHtml(pedido.cliente || '—')}</span></div>
+                <div><strong>Cidade / UF</strong><span>${escapeHtml([pedido.cidade, pedido.uf].filter(Boolean).join('/') || '—')}</span></div>
+                <div><strong>Volumes</strong><span>${escapeHtml(volumes)}</span></div>
+                <div><strong>Data agendada</strong><span>${escapeHtml(pedido.data_entrega || '—')}</span></div>
+                <div><strong>Veículo</strong><span title="${escapeHtml(veiculo.modelo || '')}">${escapeHtml(veiculo.placa || pedido.placa_veiculo || 'Não alocado')}</span></div>
+                <div><strong>Motorista</strong><span>${escapeHtml(motorista)}</span></div>
+                <div><strong>Equipe</strong><span>${escapeHtml(veiculo.equipe || '—')}</span></div>
+            </div>
+            <h3 class="pedido-view__heading">Histórico da Emissão &amp; Eventos</h3>
+            ${eventos.length ? `<div class="pedido-history">${eventos.map(renderEventoHistorico).join('')}</div>` : '<p class="pedido-view__empty">Nenhum evento registrado para este pedido.</p>'}
+        </div>`;
+}
+
+function renderEventoHistorico(evento) {
+    const evidencias = evento.evidencias || evento.anexos || evento.dados?.evidencias || [];
+    const data = evento.timestamp || evento.ocorrido_em || evento.data_hora || evento.data;
+    const dataFormatada = data ? new Date(data).toLocaleString('pt-BR') : 'Data não informada';
+    const titulo = evento.titulo || evento.descricao || evento.tipo || evento.etapa || 'Evento';
+    const status = evento.status_novo || evento.status || '';
+    const responsavel = evento.responsavel_nome || evento.usuario_nome || evento.responsavel || '';
+    const observacao = evento.observacao || evento.observacoes_entrega || '';
+    return `
+        <article class="pedido-history__event pedido-history__event--${statusClass(status || evento.tipo)}">
+            <div class="pedido-history__date">${escapeHtml(dataFormatada)}</div>
+            <div class="pedido-history__content">
+                <strong>${escapeHtml(titulo)}</strong>
+                ${status ? `<span>Status: ${escapeHtml(status)}</span>` : ''}
+                ${evento.status_anterior ? `<span>Status anterior: ${escapeHtml(evento.status_anterior)}</span>` : ''}
+                ${responsavel ? `<span>Responsável: ${escapeHtml(responsavel)}</span>` : ''}
+                ${evento.veiculo_placa ? `<span>Veículo: ${escapeHtml(evento.veiculo_placa)}</span>` : ''}
+                ${observacao ? `<span>Observação: ${escapeHtml(observacao)}</span>` : ''}
+                <div class="pedido-history__attachments">${renderAnexos(evidencias)}</div>
+            </div>
+        </article>`;
+}
+
+function dedupeHistorico(eventos) {
+    const vistos = new Set();
+    return eventos.filter(evento => {
+        const data = evento.timestamp || evento.ocorrido_em || evento.data_hora || evento.data || '';
+        const chave = evento.id
+            ? `id:${evento.id}`
+            : [data, evento.tipo || evento.etapa || '', evento.descricao || evento.titulo || '', evento.status_novo || evento.status || ''].join('|');
+        if (vistos.has(chave)) return false;
+        vistos.add(chave);
+        return true;
+    });
+}
+
+function statusClass(status) {
+    const normalizado = String(status || '').toLowerCase();
+    if (['entregue', 'concluído', 'concluido'].includes(normalizado)) return 'done';
+    if (['ocorrência', 'ocorrencia', 'ressalva'].includes(normalizado)) return 'problem';
+    return 'progress';
+}
+
+function renderAnexos(evidencias) {
+    if (!Array.isArray(evidencias) || !evidencias.length) {
+        return '<span class="pedido-history__no-attachment">Sem evidência anexada</span>';
+    }
+    const unicos = [];
+    const vistos = new Set();
+    evidencias.forEach(evidencia => {
+        const url = normalizarUrlEvidencia(evidencia);
+        const chave = evidencia.hash || evidencia.sha256 || url;
+        if (chave && vistos.has(chave)) return;
+        if (chave) vistos.add(chave);
+        unicos.push(evidencia);
+    });
+    return `<span class="pedido-history__attachment-label">Evidências</span><div class="pedido-history__thumbs">${unicos.map(evidencia => {
+        const nome = evidencia.nome || evidencia.filename || 'Evidência';
+        const url = normalizarUrlEvidencia(evidencia);
+        const imagem = String(evidencia.mime || '').startsWith('image/') && url
+            ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(nome)}">`
+            : '<span class="pedido-history__file-icon">DOC</span>';
+        return url
+            ? `<button type="button" class="pedido-history__thumb" data-evidence-preview="${registrarEvidencia(evidencia, nome, url)}" title="Visualizar ${escapeHtml(nome)}">${imagem}<span>${escapeHtml(nome)}</span></button>`
+            : `<span class="pedido-history__thumb is-unavailable" title="${escapeHtml(nome)}">${imagem}<span>${escapeHtml(nome)}</span></span>`;
+    }).join('')}</div>`;
+}
+
+function normalizarUrlEvidencia(evidencia = {}) {
+    const valor = evidencia.data_base64 || evidencia.url || evidencia.arquivo_url || '';
+    if (!valor) return '';
+    if (evidencia.data_base64 && !/^data:/i.test(valor)) {
+        return `data:${evidencia.mime || 'application/octet-stream'};base64,${valor}`;
+    }
+    return valor;
+}
+
+function registrarEvidencia(evidencia, nome, url) {
+    const id = String(++proximoIdEvidencia);
+    evidenciasPreview.set(id, {
+        nome,
+        mime: evidencia.mime || 'application/octet-stream',
+        url,
+    });
+    return id;
+}
+
+function criarAcaoEvidencia(evidencia, nome, url) {
+    const id = registrarEvidencia(evidencia, nome, url);
+    return `<button type="button" class="pedido-history__file-link" data-evidence-preview="${id}" title="Visualizar ${escapeHtml(nome)}">${escapeHtml(nome)}</button>`;
+}
+
+function abrirEvidencia(evidencia) {
+    if (!evidencia?.url) {
+        showToast('Este anexo não possui conteúdo disponível para visualização.', 'error');
+        return;
+    }
+    const mime = String(evidencia.mime || '').toLowerCase();
+    const conteudo = mime.startsWith('image/')
+        ? `<img class="pedido-evidence-preview__image" src="${escapeHtml(evidencia.url)}" alt="${escapeHtml(evidencia.nome)}">`
+        : `<iframe class="pedido-evidence-preview__document" src="${escapeHtml(evidencia.url)}" title="${escapeHtml(evidencia.nome)}"></iframe>`;
+    openModal({
+        title: evidencia.nome || 'Anexo',
+        confirmLabel: 'Fechar',
+        fields: [{
+            id: 'evidencia-preview',
+            type: 'html',
+            fullWidth: true,
+            content: `<div class="pedido-evidence-preview">${conteudo}</div>`,
+        }],
+        onConfirm: async () => ({ mensagem: '' }),
     });
 }
 

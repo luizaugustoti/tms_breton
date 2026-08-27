@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Pedido, ItemPedido
+from .models import Pedido, ItemPedido, PedidoHistorico
 from estoque.models import ProdutoEstoque, MovimentacaoEstoque
 from django.db import transaction
 from django.db import DatabaseError
@@ -20,12 +20,25 @@ class ItemPedidoSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 
+class PedidoHistoricoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PedidoHistorico
+        fields = [
+            'id', 'tipo', 'descricao', 'status_anterior', 'status_novo',
+            'dados', 'ocorrido_em',
+        ]
+        read_only_fields = fields
+
+
 class PedidoSerializer(serializers.ModelSerializer):
     itens = ItemPedidoSerializer(many=True, required=False)
+    historico = PedidoHistoricoSerializer(many=True, read_only=True)
     pedido_web = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     destinatario = serializers.SerializerMethodField()
     emitente = serializers.SerializerMethodField()
     historico_entrega = serializers.SerializerMethodField()
+    veiculo_detalhes = serializers.SerializerMethodField()
+    motorista_nome = serializers.SerializerMethodField()
     loja = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
 
     # Campos de conveniência (aliases) para compatibilidade com frontend
@@ -48,6 +61,8 @@ class PedidoSerializer(serializers.ModelSerializer):
             'data_entrega', 'periodo', 'placa_veiculo', 'observacao',
             'peso_total', 'volume_total', 'tipo_operacao', 'status', 'veiculo', 'motorista',
             'criado_em', 'assinatura_base64', 'foto_entrega_base64', 'itens',
+            'historico',
+            'veiculo_detalhes', 'motorista_nome',
             'destinatario', 'emitente', 'historico_entrega',
             'remetente_documento', 'remetente_endereco', 'remetente_complemento',
             'remetente_numero', 'remetente_cidade', 'remetente_uf',
@@ -72,6 +87,23 @@ class PedidoSerializer(serializers.ModelSerializer):
             "nome": obj.loja or ""
         }
 
+    def get_veiculo_detalhes(self, obj):
+        if not obj.veiculo:
+            return None
+        equipe = getattr(obj.veiculo, 'equipe', None)
+        return {
+            'id': obj.veiculo_id,
+            'placa': obj.veiculo.placa,
+            'modelo': obj.veiculo.modelo or '',
+            'equipe': equipe.nome if equipe else '',
+        }
+
+    def get_motorista_nome(self, obj):
+        if not obj.motorista:
+            return ''
+        nome = f"{obj.motorista.first_name} {obj.motorista.last_name}".strip()
+        return nome or obj.motorista.username
+
     def get_historico_entrega(self, obj):
         from roteirizacao.models import ParadaRota
 
@@ -92,6 +124,7 @@ class PedidoSerializer(serializers.ModelSerializer):
                                 'nome': i.get('nome', f'foto-{idx}'),
                                 'mime': i.get('mime', 'image/jpeg'),
                                 'origem': i.get('origem', ''),
+                                'hash': i.get('hash', ''),
                                 'url': i.get('data_base64') or i.get('url') or '',
                             })
                         elif isinstance(i, str):
@@ -336,3 +369,12 @@ class PedidoSerializer(serializers.ModelSerializer):
         extras['destinatario_uf'] = extras.get('destinatario_uf') or instance.uf
         registrar_pessoas_da_emissao(instance, extras, increment=True)
         return instance
+
+
+class PedidoListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Pedido
+        fields = [
+            'id', 'numero_nota', 'cliente', 'cidade', 'uf',
+            'volume_total', 'data_entrega', 'status',
+        ]

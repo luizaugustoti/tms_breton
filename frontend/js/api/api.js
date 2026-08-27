@@ -716,6 +716,7 @@ function initSubmenuBar(sidebarEl) {
         return;
     }
 
+    const currentPage = getCurrentPageName();
     const sidebar = sidebarEl || document.querySelector('.sidebar');
     if (!sidebar) {
         return;
@@ -735,7 +736,6 @@ function initSubmenuBar(sidebarEl) {
     topNav.appendChild(submenu);
     document.body.classList.add('has-submenu');
 
-    const currentPage = getCurrentPageName();
     let selectedTab = (window.location.hash || '').replace('#', '');
     if (currentPage === 'roteirizacao.html' && !selectedTab) {
         selectedTab = 'painel-entrega';

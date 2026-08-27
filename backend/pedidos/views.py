@@ -5,7 +5,7 @@ from rest_framework import status
 from django.utils import timezone
 from django.db import transaction
 from .models import Pedido
-from .serializers import PedidoSerializer
+from .serializers import PedidoSerializer, PedidoListSerializer
 import re
 from pypdf import PdfReader
 
@@ -91,6 +91,19 @@ def _extract_numero_pedido(text, lines):
 class PedidoViewSet(viewsets.ModelViewSet):
     queryset = Pedido.objects.all().select_related('veiculo', 'motorista').prefetch_related('itens', 'paradarota_set').order_by('-criado_em')
     serializer_class = PedidoSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return PedidoListSerializer
+        return super().get_serializer_class()
+
+    @action(detail=True, methods=['get'], url_path='historico')
+    def historico(self, request, pk=None):
+        pedido = self.get_object()
+        from .serializers import PedidoHistoricoSerializer
+
+        eventos = pedido.historico.all()
+        return Response(PedidoHistoricoSerializer(eventos, many=True).data)
 
     def _garantir_no_backlog(self, pedido):
         """Insere o pedido automaticamente no Backlog da Roteirização de forma segura."""

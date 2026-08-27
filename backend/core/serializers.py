@@ -7,7 +7,10 @@ Usuario = get_user_model()
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'role', 'telefone', 'is_active']
+        fields = [
+            'id', 'username', 'first_name', 'last_name', 'email', 'role', 'telefone',
+            'is_active', 'is_staff', 'is_superuser',
+        ]
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):

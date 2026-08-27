@@ -99,14 +99,16 @@ if %ERRORLEVEL% NEQ 0 (
 popd
 echo [OK] Migracoes aplicadas.
 
-:: --- Verifica se ja roda ---
+:: --- Libera a porta antes de iniciar ---
 echo.
-echo [PASSO 5] Verificando se ja esta rodando...
-tasklist /FI "WINDOWTITLE eq TMS Breton - Servidor" 2>nul | findstr "python" >nul
-if %ERRORLEVEL% EQU 0 (
-    echo [AVISO] Servidor ja esta rodando!
-    goto :abrir_navegador
+echo [PASSO 5] Liberando a porta %PORTA%...
+call :liberar_porta
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERRO] Nao foi possivel liberar a porta %PORTA%.
+    pause
+    exit /b 1
 )
+echo [OK] Porta %PORTA% liberada.
 
 :: --- Inicia servidor ---
 echo.
@@ -135,6 +137,25 @@ echo   - Feche a janela "TMS Breton - Servidor"
 echo   - Ou execute: iniciar_tms.bat stop
 echo.
 pause
+exit /b 0
+
+:: ============================================================
+:: LIBERAR PORTA
+:: ============================================================
+:liberar_porta
+set "PORTA_OCUPADA="
+for /f "tokens=5" %%p in ('netstat -ano -p tcp 2^>nul ^| findstr /R /C:":%PORTA% .*LISTENING"') do (
+    set "PORTA_OCUPADA=1"
+    echo [INFO] Encerrando processo PID %%p na porta %PORTA%...
+    taskkill /PID %%p /F >nul 2>&1
+    if errorlevel 1 (
+        echo [ERRO] Falha ao encerrar o processo PID %%p.
+        exit /b 1
+    )
+)
+if defined PORTA_OCUPADA (
+    timeout /t 1 /nobreak >nul
+)
 exit /b 0
 
 :: ============================================================
