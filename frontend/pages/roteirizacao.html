@@ -257,6 +257,116 @@
             gap: 8px;
         }
         .stat-pill strong { font-weight: 700; color: #5A1827; }
+        .vehicle-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            border: 0;
+            border-radius: 7px;
+            padding: 4px 7px 4px 5px;
+            margin: -4px 0 -4px -5px;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: left;
+            transition: background-color .15s ease, color .15s ease;
+        }
+        .vehicle-toggle:hover {
+            background: rgba(255, 255, 255, .14);
+        }
+        .vehicle-toggle:focus-visible {
+            outline: 2px solid rgba(255, 255, 255, .95);
+            outline-offset: 2px;
+        }
+        .vehicle-toggle__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 18px;
+            width: 18px;
+            height: 18px;
+        }
+        .vehicle-toggle__icon svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+        .vehicle-toggle__chevron {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px;
+            height: 14px;
+            margin-left: 1px;
+            font-size: .9rem;
+            line-height: 1;
+            transition: transform .15s ease;
+        }
+        .vehicle-toggle[aria-expanded="false"] .vehicle-toggle__chevron { transform: rotate(-90deg); }
+        .vehicle-summary {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding-top: 3px;
+            font-size: .68rem;
+            color: #475569;
+        }
+        .vehicle-summary span { white-space: nowrap; }
+        .vehicle-summary__done { color: #2d6a4f; }
+        .vehicle-summary__pending { color: #9a5b16; }
+        .vehicle-progress {
+            height: 4px;
+            overflow: hidden;
+            border-radius: 99px;
+            background: #e2e8f0;
+        }
+        .vehicle-progress span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: #2d6a4f;
+            transition: width .2s ease;
+        }
+        .kanban-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: -8px 0 16px;
+        }
+        .kanban-search {
+            flex: 1 1 280px;
+            min-width: 220px;
+            height: 34px;
+            border: 1px solid #d4c7bd;
+            border-radius: 7px;
+            padding: 0 12px;
+            font: inherit;
+            font-size: .8rem;
+            color: #334155;
+            background: #fff;
+        }
+        .kanban-search:focus {
+            outline: none;
+            border-color: #C5A059;
+            box-shadow: 0 0 0 3px rgba(197,160,89,.15);
+        }
+        .kanban-control-btn {
+            height: 34px;
+            border: 1px solid #d4c7bd;
+            border-radius: 7px;
+            background: #fff;
+            color: #5A1827;
+            padding: 0 11px;
+            font: inherit;
+            font-size: .75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .kanban-control-btn:hover { background: #f8f1eb; border-color: #C5A059; }
 
         /* ══════════════════════════════════════════
            LOADING OVERLAY
@@ -290,6 +400,8 @@
         ══════════════════════════════════════════ */
         @media (max-width: 768px) {
             .kanban-col { flex: 0 0 260px; min-width: 260px; }
+            .kanban-controls { align-items: stretch; }
+            .kanban-control-btn { flex: 1 1 auto; }
         }
     </style>
 </head>
@@ -612,16 +724,19 @@
                     <h1>Painel de entrega</h1>
                     <p>Acompanhe a frota e confirme a rota do dia</p>
                 </div>
-                <div class="kanban-toolbar">
-                    <button class="btn btn--secondary" id="btnRefresh" title="Recarregar dados">🔄 Atualizar</button>
-                    <button class="btn btn--primary" id="btnPublicarRotas">✅ Publicar Rotas do Dia</button>
-                </div>
             </div>
             <div class="stats-bar" id="statsBar">
-                <div class="stat-pill">📦 Backlog: <strong id="statBacklog">—</strong></div>
-                <div class="stat-pill">🚚 Em Rota: <strong id="statEmRota">—</strong></div>
-                <div class="stat-pill">✅ Concluídos: <strong id="statConcluidos">—</strong></div>
-                <div class="stat-pill">📍 Veículos Ativos: <strong id="statVeiculos">—</strong></div>
+                <div class="stat-pill"><span data-icon="package"></span><span>Backlog:</span> <strong id="statBacklog">—</strong></div>
+                <div class="stat-pill"><span data-icon="truck"></span><span>Em Rota:</span> <strong id="statEmRota">—</strong></div>
+                <div class="stat-pill"><span data-icon="check"></span><span>Concluídos:</span> <strong id="statConcluidos">—</strong></div>
+                <div class="stat-pill"><span data-icon="pin"></span><span>Veículos Ativos:</span> <strong id="statVeiculos">—</strong></div>
+            </div>
+            <div class="kanban-controls">
+                <input id="buscaVeiculo" class="kanban-search" type="search"
+                    placeholder="Pesquisar veículo, motorista ou equipe..."
+                    aria-label="Pesquisar veículo, motorista ou equipe">
+                <button type="button" class="kanban-control-btn" id="btnExpandirVeiculos">Expandir todos</button>
+                <button type="button" class="kanban-control-btn" id="btnRecolherVeiculos">Recolher todos</button>
             </div>
             <div class="kanban-board" id="kanbanBoard" style="position: relative;">
                 <div class="skeleton-col" id="skeletonLoader">
@@ -636,6 +751,6 @@
     </main>
 </div>
 
-<script type="module" src="../js/modules/roteirizacao.js?v=16"></script>
+<script type="module" src="../js/modules/roteirizacao.js?v=18"></script>
 </body>
 </html>

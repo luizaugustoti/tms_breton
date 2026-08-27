@@ -10,6 +10,7 @@ import { showToast } from '../utils/modal.js';
 
 const state = {
     pedidos:  [],
+    pedidosCadastro: [],
     veiculos: [],
     equipes: [],
     funcionarios: [],
@@ -21,6 +22,8 @@ const state = {
     formEntregas: [],
     formColetas: [],
     manifestoEditandoId: null,
+    filtroVeiculo: '',
+    colunasRecolhidas: new Set(),
 };
 
 const VIEW_PROPRIA = 'propria';
@@ -84,8 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
         authService.logout();
     });
 
-    document.getElementById('btnRefresh')?.addEventListener('click', () => carregarDados());
-    document.getElementById('btnPublicarRotas')?.addEventListener('click', publicarRotas);
     initManifestoList();
 
     window.addEventListener('tms:show-view', (event) => {
@@ -100,6 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function tipoFrotaVeiculo(veiculo) {
     return String(veiculo?.tipo_frota || 'PROPRIA').toUpperCase() === 'TERCEIRO' ? 'TERCEIRO' : 'PROPRIA';
+}
+
+function veiculoAtivo(veiculo) {
+    if (veiculo?.ativo === false) return false;
+    const status = String(veiculo?.status_operacional || '').trim().toLowerCase();
+    return !status || /^(ativo|dispon[ií]vel)$/.test(status);
 }
 
 function aplicarView(viewName, options = {}) {
@@ -125,10 +132,8 @@ function aplicarView(viewName, options = {}) {
 
 function veiculosDaView() {
     return state.veiculos.filter((veiculo) => {
-        const tipo = tipoFrotaVeiculo(veiculo);
-        const disponivel = !veiculo.status_operacional || /dispon/i.test(veiculo.status_operacional);
-        if (state.view === VIEW_PAINEL_ENTREGA) return tipo === 'TERCEIRO' && disponivel;
-        return tipo === 'PROPRIA';
+        if (state.view === VIEW_PAINEL_ENTREGA) return veiculoAtivo(veiculo);
+        return tipoFrotaVeiculo(veiculo) === 'PROPRIA';
     });
 }
 
@@ -145,11 +150,12 @@ async function carregarDados() {
     mostrarSkeleton(true);
     try {
         // 1. Busca todos os dados necessários em paralelo
-        const [veiculosRes, rotasRes, equipesRes, funcionariosRes] = await Promise.all([
+        const [veiculosRes, rotasRes, equipesRes, funcionariosRes, pedidosRes] = await Promise.all([
             api.request('/cadastros/veiculos/', 'GET'),
             api.request('/roteirizacao/rotas/', 'GET'),
             api.request('/cadastros/equipes/', 'GET'),
-            api.request('/cadastros/funcionarios/', 'GET').catch(() => []),
+            api.request('/cadastros/funcionarios/', 'GET'),
+            api.request('/pedidos/', 'GET'),
         ]);
 
         // 2. Atualiza o State com os dados recebidos
@@ -157,6 +163,7 @@ async function carregarDados() {
         state.equipes = Array.isArray(equipesRes) ? equipesRes : (equipesRes.results || []);
         state.funcionarios = Array.isArray(funcionariosRes) ? funcionariosRes : (funcionariosRes.results || []);
         state.rotas = Array.isArray(rotasRes) ? rotasRes : (rotasRes.results || []);
+        state.pedidosCadastro = Array.isArray(pedidosRes) ? pedidosRes : (pedidosRes.results || []);
 
         // 3. Processa os pedidos com normalização rigorosa do ID/Placa do veículo
         state.pedidos = [];
@@ -208,9 +215,20 @@ function construirBoard() {
 
     const backlog = [];
     const porVeiculo = {};
-    const veiculosView = veiculosDaView();
+    const resumos = {};
+    const termo = state.filtroVeiculo.trim().toLowerCase();
+    const veiculosView = veiculosDaView().filter((veiculo) => {
+        if (!termo) return true;
+        const equipe = state.equipes.find((item) =>
+            String(item.id) === String(veiculo.equipe_id || veiculo.equipe)
+        );
+        const motorista = equipe?.motorista_nome || veiculo.motorista_nome || veiculo.motorista?.nome || '';
+        return [veiculo.placa, veiculo.modelo, veiculo.tipo_equipamento, motorista, equipe?.nome]
+            .some((valor) => String(valor || '').toLowerCase().includes(termo));
+    });
     
     veiculosView.forEach(v => { porVeiculo[v.id] = []; });
+    veiculosDaView().forEach((v) => { resumos[v.id] = { total: 0, entregues: 0 }; });
     
     state.pedidos.forEach(p => {
         const statusStr = String(p.status || '').toUpperCase();
@@ -223,11 +241,13 @@ function construirBoard() {
             statusStr === 'RESSALVA'
         );
         
-        if (ehConcluidoPedido) {
-            return; 
+        const vid = String(p.veiculo_id || p.vehicle_id || '');
+        if (resumos[vid]) {
+            resumos[vid].total += 1;
+            if (ehConcluidoPedido) resumos[vid].entregues += 1;
         }
 
-        const vid = String(p.veiculo_id || p.vehicle_id || '');
+        if (ehConcluidoPedido) return;
 
         const veiculoEncontrado = state.veiculos.find(v => 
             String(v.id) === vid || String(v.placa) === vid
@@ -244,7 +264,7 @@ function construirBoard() {
     board.appendChild(criarColuna({
         id: 'col-backlog',
         tipo: 'backlog',
-        titulo: '📋 Backlog — Pedidos Pendentes',
+        titulo: 'Backlog — Pedidos Pendentes',
         subtitulo: 'Pedidos aguardando alocação em veículo',
         cards: backlog,
         grupo: 'kanban',
@@ -256,11 +276,10 @@ function construirBoard() {
         empty.style.minWidth = '320px';
         empty.innerHTML = `
             <div class="col-header">
-                <div class="col-title">${state.view === VIEW_PAINEL_ENTREGA ? 'Painel de entrega' : 'Frota Própria'}</div>
+                <div class="col-title">${termo ? 'Nenhum veículo encontrado' : (state.view === VIEW_PAINEL_ENTREGA ? 'Painel de entrega' : 'Frota Própria')}</div>
             </div>
             <div style="padding:18px;color:#7A6055;font-size:0.85rem;line-height:1.5;">
-                Nenhum veículo cadastrado nesta frota.<br>
-                Cadastre em <strong>Cadastros → Veículos</strong> e marque o tipo de frota.
+                ${termo ? 'Tente buscar por outra placa, motorista ou equipe.' : 'Nenhum veículo ativo cadastrado.<br>Cadastre ou ative um veículo em <strong>Cadastros → Veículos</strong>.'}
             </div>`;
         board.appendChild(empty);
     }
@@ -295,7 +314,7 @@ function construirBoard() {
         board.appendChild(criarColuna({
             id: `col-veiculo-${v.id}`,
             tipo: 'vehicle',
-            titulo: `🚚 ${v.placa}`,
+            titulo: v.placa,
             subtitulo: `${v.tipo_equipamento || 'Veículo'} · ${v.capacidade_peso_kg ? v.capacidade_peso_kg + ' kg' : ''}`,
             cards: porVeiculo[v.id] || [],
             grupo: 'kanban',
@@ -303,12 +322,14 @@ function construirBoard() {
             placa: v.placa,
             motorista: motoristaExibicao,
             equipe: equipeExibicao,
-            equipeMembros
+            equipeMembros,
+            resumo: resumos[v.id] || { total: 0, entregues: 0 },
+            recolhida: state.colunasRecolhidas.has(String(v.id))
         }));
     });
 }
 
-function criarColuna({ id, tipo, titulo, subtitulo, cards, grupo, veiculoId = null, placa = null, motorista = '', equipe = '', equipeMembros = '' }) {
+function criarColuna({ id, tipo, titulo, subtitulo, cards, grupo, veiculoId = null, placa = null, motorista = '', equipe = '', equipeMembros = '', resumo = null, recolhida = false }) {
     const col = document.createElement('div');
     col.className = `kanban-col kanban-col--${tipo}`;
     col.dataset.colId = id;
@@ -317,6 +338,7 @@ function criarColuna({ id, tipo, titulo, subtitulo, cards, grupo, veiculoId = nu
     col.dataset.placa = placa || '';
 
     const dataHoje = new Date().toLocaleDateString('pt-BR');
+    const tituloIcone = tipo === 'vehicle' ? 'truck' : tipo === 'backlog' ? 'package' : '';
 
     let headerExtraHtml = '';
     if (tipo === 'vehicle') {
@@ -324,21 +346,33 @@ function criarColuna({ id, tipo, titulo, subtitulo, cards, grupo, veiculoId = nu
         const motoristaTexto = motorista ? motorista : 'Não atribuído';
         const membrosTexto = equipeMembros ? truncarTexto(equipeMembros, 54) : '';
 
+        const totalPedidos = resumo?.total || 0;
+        const entregues = resumo?.entregues || 0;
+        const restantes = Math.max(totalPedidos - entregues, 0);
+        const progresso = totalPedidos ? Math.round((entregues / totalPedidos) * 100) : 0;
         headerExtraHtml = `
             <div style="margin-top: 10px; background: #ffffff; color: #1e293b; padding: 10px 11px; border-radius: 9px; font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
                 <div style="display: grid; grid-template-columns: 78px minmax(0, 1fr); align-items: center; gap: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
-                    <span style="font-weight: 700; color: #64748b; white-space: nowrap;">📅 Data</span>
+                    <span style="font-weight: 700; color: #64748b; white-space: nowrap;">Data</span>
                     <span style="font-weight: 700; color: #0f172a; text-align: right; white-space: nowrap;">${dataHoje}</span>
                 </div>
                 <div style="display: grid; grid-template-columns: 78px minmax(0, 1fr); align-items: center; gap: 8px;">
-                    <span style="font-weight: 700; color: #64748b; white-space: nowrap;">👤 Motor.</span>
+                    <span style="font-weight: 700; color: #64748b; white-space: nowrap;">Motor</span>
                     <span style="font-weight: 600; color: #1e293b; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${motoristaTexto}">${motoristaTexto}</span>
                 </div>
                 <div style="display: grid; grid-template-columns: 78px minmax(0, 1fr); align-items: center; gap: 8px;">
-                    <span style="font-weight: 700; color: #64748b; white-space: nowrap;">👥 Equipe</span>
+                    <span style="font-weight: 700; color: #64748b; white-space: nowrap;">Equipe</span>
                     <span style="font-weight: 600; color: #1e293b; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${equipeTexto}">${equipeTexto}</span>
                 </div>
                 ${membrosTexto ? `<div style="font-size: 0.68rem; color: #64748b; border-top: 1px dashed #e2e8f0; padding-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${equipeMembros}"><strong style="color:#475569;">Membros:</strong> ${membrosTexto}</div>` : ''}
+                <div class="vehicle-summary">
+                    <span><strong>${totalPedidos}</strong> pedidos</span>
+                    <span class="vehicle-summary__done"><strong>${entregues}</strong> entregues</span>
+                    <span class="vehicle-summary__pending"><strong>${restantes}</strong> restantes</span>
+                </div>
+                <div class="vehicle-progress" aria-label="${progresso}% dos pedidos entregues">
+                    <span style="width:${progresso}%"></span>
+                </div>
             </div>
         `;
     }
@@ -346,15 +380,28 @@ function criarColuna({ id, tipo, titulo, subtitulo, cards, grupo, veiculoId = nu
     col.innerHTML = `
         <div class="col-header">
             <div class="col-header-top">
-                <span class="col-title">${titulo}</span>
+                <button type="button" class="vehicle-toggle" aria-expanded="${!recolhida}" aria-label="${recolhida ? 'Expandir' : 'Recolher'} pedidos do veículo">${tituloIcone ? `<span class="vehicle-toggle__icon" data-icon="${tituloIcone}"></span>` : ''}<span class="vehicle-toggle__label">${titulo}</span><span class="vehicle-toggle__chevron" aria-hidden="true">⌄</span></button>
                 <span class="col-badge" id="badge-${id}">${cards.length}</span>
             </div>
             <div class="col-subtitle">${subtitulo}</div>
             ${headerExtraHtml}
         </div>
-        <div class="kanban-list" id="list-${id}"></div>`;
+        <div class="kanban-list${recolhida ? ' is-collapsed' : ''}" id="list-${id}" ${recolhida ? 'hidden' : ''}></div>`;
 
     const lista = col.querySelector(`#list-${id}`);
+    const toggle = col.querySelector('.vehicle-toggle');
+    if (toggle && tipo === 'vehicle') {
+        toggle.addEventListener('click', () => {
+            const fechado = lista.classList.toggle('is-collapsed');
+            lista.hidden = fechado;
+            toggle.setAttribute('aria-expanded', String(!fechado));
+            toggle.setAttribute('aria-label', `${fechado ? 'Expandir' : 'Recolher'} pedidos do veículo`);
+            if (veiculoId !== null) {
+                if (fechado) state.colunasRecolhidas.add(String(veiculoId));
+                else state.colunasRecolhidas.delete(String(veiculoId));
+            }
+        });
+    }
 
     if (cards.length === 0) {
         lista.innerHTML = emptyState();
@@ -483,10 +530,10 @@ function renderCard(pedido, tipoColuna = 'backlog') {
     if (hSaida || hChegada || hInicio || hFim) {
         timelineHtml = `
             <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e2e8f0; font-size: 0.65rem; color: #64748b; display: flex; flex-direction: column; gap: 2px;">
-                ${hSaida ? `<div>🚚 SAÍDA ENTREGA: ${hSaida}</div>` : ''}
-                ${hChegada ? `<div>📍 CHEGADA CLIENTE: ${hChegada}</div>` : ''}
-                ${hInicio ? `<div>📦 INÍCIO: ${hInicio}</div>` : ''}
-                ${hFim ? `<div>✅ FINALIZADO: ${hFim}</div>` : ''}
+                ${hSaida ? `<div>SAÍDA ENTREGA: ${hSaida}</div>` : ''}
+                ${hChegada ? `<div>CHEGADA CLIENTE: ${hChegada}</div>` : ''}
+                ${hInicio ? `<div>INÍCIO: ${hInicio}</div>` : ''}
+                ${hFim ? `<div>FINALIZADO: ${hFim}</div>` : ''}
             </div>
         `;
     }
@@ -523,7 +570,7 @@ if (tipoColuna === 'vehicle' && paradaId) {
         </div>
         <div style="display: flex; justify-content: space-between; color: #475569; margin-bottom: 3px; font-weight: 600;">
             <span>PEDIDO: #${numero}</span>
-            <span>📦 ${volumes} VOL.</span>
+            <span>${volumes} VOL.</span>
         </div>
         <div style="color: #64748b; margin-bottom: 4px;">
             LOCAL: ${localizacaoTexto}
@@ -549,7 +596,7 @@ if (tipoColuna === 'vehicle' && paradaId) {
 }
 
 function emptyState() {
-    return `<div class="col-empty"><span class="col-empty-icon">📭</span>Arraste pedidos para cá</div>`;
+    return `<div class="col-empty"><span class="col-empty-icon" data-icon="inbox"></span>Arraste pedidos para cá</div>`;
 }
 
 function truncarTexto(valor, limite = 60) {
@@ -691,7 +738,7 @@ function abrirModalDetalhesPedido(pedido) {
             <div style="padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; font-size: 0.85rem; color: #334155;">
                 
                 <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
-                    <div style="font-weight: 700; color: #0f172a; margin-bottom: 6px;">📍 INFORMAÇÕES DE ENTREGA E CLIENTE</div>
+                    <div style="font-weight: 700; color: #0f172a; margin-bottom: 6px;">INFORMAÇÕES DE ENTREGA E CLIENTE</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
                         <div><strong>Destinatário:</strong> ${cliente}</div>
                         <div><strong>Volumes:</strong> ${volumes} vol(s)</div>
@@ -708,15 +755,15 @@ function abrirModalDetalhesPedido(pedido) {
                 <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
                     <div style="font-weight: 700; color: #0f172a; margin-bottom: 6px;">⏱️ HISTÓRICO OPERACIONAL E TIMELINE</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.8rem;">
-                        <div>🚚 <strong>Saída Entrega:</strong> ${pedido.saida_entrega || pedido.hora_saida || 'Aguardando'}</div>
-                        <div>📍 <strong>Chegada Cliente:</strong> ${pedido.chegada_cliente || pedido.hora_chegada || 'Aguardando'}</div>
-                        <div>📦 <strong>Início Descarga:</strong> ${pedido.inicio_descarregamento || pedido.hora_inicio || 'Aguardando'}</div>
-                        <div>✅ <strong>Finalizado:</strong> ${pedido.finalizado || pedido.hora_fim || 'Aguardando'}</div>
+                        <div><strong>Saída Entrega:</strong> ${pedido.saida_entrega || pedido.hora_saida || 'Aguardando'}</div>
+                        <div><strong>Chegada Cliente:</strong> ${pedido.chegada_cliente || pedido.hora_chegada || 'Aguardando'}</div>
+                        <div><strong>Início Descarga:</strong> ${pedido.inicio_descarregamento || pedido.hora_inicio || 'Aguardando'}</div>
+                        <div><strong>Finalizado:</strong> ${pedido.finalizado || pedido.hora_fim || 'Aguardando'}</div>
                     </div>
                 </div>
 
                 <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
-                    <div style="font-weight: 700; color: #0f172a; margin-bottom: 6px;">📦 ITENS / PRODUTOS DO PEDIDO</div>
+                    <div style="font-weight: 700; color: #0f172a; margin-bottom: 6px;">ITENS / PRODUTOS DO PEDIDO</div>
                     ${itensHtml}
                 </div>
 
@@ -751,16 +798,6 @@ function abrirModalDetalhesPedido(pedido) {
     document.getElementById('fecharModalDetalhes').addEventListener('click', () => overlay.remove());
     document.getElementById('fecharModalDetalhesFooter').addEventListener('click', () => overlay.remove());
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-}
-
-async function publicarRotas() {
-    try {
-        showToast('Publicando rotas do dia...', 'info');
-        showToast('Rotas publicadas com sucesso!', 'success');
-    } catch (err) {
-        console.error('[Kanban] Erro ao publicar rotas:', err);
-        showToast('Erro ao publicar rotas.', 'error');
-    }
 }
 
 function hojeISO() {
@@ -1048,6 +1085,19 @@ function initManifestoList() {
     document.getElementById('btnSaidaEfetiva')?.addEventListener('click', registrarSaidaEfetiva);
     document.getElementById('btnVoltarManifesto')?.addEventListener('click', fecharFormManifesto);
     document.getElementById('mfForm')?.addEventListener('submit', salvarFormManifesto);
+    const buscaVeiculo = document.getElementById('buscaVeiculo');
+    buscaVeiculo?.addEventListener('input', (event) => {
+        state.filtroVeiculo = event.target.value;
+        construirBoard();
+    });
+    document.getElementById('btnExpandirVeiculos')?.addEventListener('click', () => {
+        state.colunasRecolhidas.clear();
+        construirBoard();
+    });
+    document.getElementById('btnRecolherVeiculos')?.addEventListener('click', () => {
+        veiculosDaView().forEach((veiculo) => state.colunasRecolhidas.add(String(veiculo.id)));
+        construirBoard();
+    });
     // CORRECAO: forcar type="button" e preventDefault para nao submeter o form ao clicar
     const btnMaisEntrega = document.getElementById('btnMaisEntrega');
     if (btnMaisEntrega) {
@@ -1813,28 +1863,40 @@ async function registrarSaidaEfetiva() {
 }
 
 function atualizarStats() {
-    const totalBacklog = document.querySelectorAll('#list-col-backlog .kanban-card').length;
+    const pedidosAlocados = new Set(
+        state.pedidos
+            .filter((pedido) => Boolean(pedido.veiculo_id || pedido.vehicle_id))
+            .map((pedido) => String(pedido.id))
+    );
+    const totalBacklog = state.pedidosCadastro.filter((pedido) => {
+        const status = String(pedido.status || '').toUpperCase();
+        const concluido = ['CONCLUIDO', 'CONCLUÍDO', 'ENTREGUE', 'FINALIZADO', 'ENTREGA_REALIZADA'].includes(status);
+        const temVeiculo = pedido.veiculo || pedido.veiculo_id || pedido.placa_veiculo;
+        return !concluido && !pedidosAlocados.has(String(pedido.id)) && !temVeiculo;
+    }).length;
     const badgeBacklog = document.getElementById('badge-col-backlog');
     if (badgeBacklog) badgeBacklog.textContent = totalBacklog;
 
-    let totalEmRota = 0;
-    let veiculosAtivos = 0;
+    const totalEmRota = state.pedidos.filter((pedido) => {
+        const status = String(pedido?.status || '').toUpperCase();
+        return !['CONCLUIDO', 'CONCLUÍDO', 'ENTREGUE', 'FINALIZADO', 'ENTREGA_REALIZADA'].includes(status)
+            && Boolean(pedido.veiculo_id || pedido.vehicle_id);
+    }).length;
 
-    veiculosDaView().forEach(v => {
-        const lista = document.getElementById(`list-col-veiculo-${v.id}`);
-        const badge = document.getElementById(`badge-col-veiculo-${v.id}`);
-        if (lista && badge) {
-            const qtdCardsReais = lista.querySelectorAll('.kanban-card').length;
-            badge.textContent = qtdCardsReais;
-            totalEmRota += qtdCardsReais;
-            if (qtdCardsReais > 0) veiculosAtivos += 1;
+    const pedidosConcluidos = new Set(
+        state.pedidosCadastro
+            .filter((pedido) => ['CONCLUIDO', 'CONCLUÍDO', 'ENTREGUE', 'FINALIZADO', 'ENTREGA_REALIZADA']
+                .includes(String(pedido.status || '').toUpperCase()))
+            .map((pedido) => String(pedido.id))
+    );
+    state.pedidos.forEach((pedido) => {
+        if (['CONCLUIDO', 'CONCLUÍDO', 'ENTREGUE', 'FINALIZADO', 'ENTREGA_REALIZADA']
+            .includes(String(pedido.status || '').toUpperCase())) {
+            pedidosConcluidos.add(String(pedido.id));
         }
     });
-
-    const totalConcluidos = state.pedidos.filter(p => {
-        const status = String(p?.status || '').toUpperCase();
-        return ['CONCLUIDO', 'CONCLUÍDO', 'ENTREGUE', 'FINALIZADO', 'ENTREGA_REALIZADA'].includes(status);
-    }).length;
+    const totalConcluidos = pedidosConcluidos.size;
+    const veiculosAtivos = state.veiculos.filter(veiculoAtivo).length;
 
     const statBacklogEl = document.getElementById('statBacklog');
     const statEmRotaEl = document.getElementById('statEmRota');
