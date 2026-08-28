@@ -29,8 +29,10 @@ const state = {
     fotoFile:    null,
     fotosFiles:  [],
     fotosRessalvaFiles: [],
+    carregandoEntregas: false,
     checkinEntrega: null,
     checkinGostou: null,
+    checkinNota: null,
     checkinResolve: null,
 };
 
@@ -108,6 +110,8 @@ function usarEntregasDemo() {
 }
 
 async function carregarEntregas() {
+    if (state.carregandoEntregas) return;
+    state.carregandoEntregas = true;
     mostrarSkeleton();
 
     try {
@@ -132,6 +136,7 @@ async function carregarEntregas() {
         }
     }
 
+    state.carregandoEntregas = false;
     atualizarStats();
     renderEntregas();
 }
@@ -228,13 +233,13 @@ function renderEntregas() {
     setEl('sectionCount', `${totalFiltrado} ${totalFiltrado === 1 ? 'pedido' : 'pedidos'}`);
 
     const labelFiltro = {
-        todos: '📋 Entregas de Hoje',
-        'pendente': '⏳ Pendentes',
-        'em-rota':  '🚀 Em Rota',
-        'entregue': '✅ Entregues',
-        'ocorrencia':'⚠️ Ocorrências',
+        todos: 'Entregas de Hoje',
+        'pendente': 'Pendentes',
+        'em-rota':  'Em Rota',
+        'entregue': 'Entregues',
+        'ocorrencia':'Ocorrências',
     };
-    setEl('sectionTitle', labelFiltro[state.filtro] || '📋 Entregas');
+    setEl('sectionTitleText', labelFiltro[state.filtro] || 'Entregas');
 
     if (!lista.length) {
         const semManifesto = !state.entregas.length;
@@ -276,7 +281,7 @@ function renderCardEntrega(e, idx, total) {
         <div class="entrega-card" id="card-${e.id}">
             <div class="entrega-card__header">
                 <span class="entrega-card__num">Pedido ${numero} · Parada ${idx}/${total}</span>
-                <span class="status-badge status-badge--${statusKey}">${statusInfo.emoji} ${statusInfo.label}</span>
+                <span class="status-badge status-badge--${statusKey}"><span data-icon="${statusInfo.icon}" aria-hidden="true"></span> ${statusInfo.label}</span>
             </div>
             <div class="entrega-card__body">
                 <div class="entrega-card__cliente">${esc(cliente)}</div>
@@ -738,7 +743,6 @@ function resetFotosComprovante() {
 function abrirComprovante(e) {
     state.modoAcao = 'finalizacao';
     state.pedidoAtivo = e;
-    limparAssinatura();
     resetFotosComprovante();
     const nomeEl = document.getElementById('nomeRecebedor');
     if (nomeEl) nomeEl.value = state.ultimoRecebedor || '';
@@ -770,7 +774,6 @@ function abrirComprovante(e) {
 function abrirComprovanteChegada(e) {
     state.modoAcao = 'chegada';
     state.pedidoAtivo = e;
-    limparAssinatura();
     resetFotosComprovante();
     setModoComprovante('chegada');
     renderItensRessalva(e);
@@ -789,18 +792,18 @@ function abrirComprovanteChegada(e) {
 }
 
 function setModoComprovante(modo) {
-    const titulo = document.querySelector('#comprovanteSheet h3');
+    const titulo = document.getElementById('comprovanteTituloText');
     const lblSig = document.getElementById('lblAssinatura');
     const sigWrap = document.getElementById('sigWrap');
     const nomeWrap = document.getElementById('nomeRecebedorWrap');
     const docWrap = document.getElementById('documentoRecebedorWrap');
     const obsWrap = document.getElementById('obsEntregaWrap');
     const statusWrap = document.getElementById('statusFinalWrap');
-    const fotoLabel = document.querySelector('#fotoUploadArea p');
+    const fotoLabel = document.getElementById('fotoUploadLabel');
     const btnConfirm = document.getElementById('btnConfirmarEntrega');
 
     const isChegada = modo === 'chegada';
-    if (titulo) titulo.textContent = isChegada ? '📍 Registrar Chegada' : '✅ Finalizar Entrega';
+    if (titulo) titulo.textContent = isChegada ? 'Registrar Chegada' : 'Finalizar Entrega';
     if (lblSig) lblSig.style.display = isChegada ? 'none' : 'block';
     if (sigWrap) sigWrap.style.display = isChegada ? 'none' : 'block';
     if (nomeWrap) nomeWrap.style.display = isChegada ? 'none' : 'block';
@@ -872,18 +875,12 @@ async function confirmarEntrega() {
         showToast('Adicione ao menos uma foto da chegada.', 'error');
         return;
     }
-    if (modo !== 'chegada' && !state.sigTemAssinatura && !state.fotosFiles.length) {
-        showToast('Colete assinatura ou foto para finalizar.', 'error');
-        return;
-    }
-
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Confirmando...'; }
 
     const nome = document.getElementById('nomeRecebedor')?.value?.trim() || '';
     const documento = document.getElementById('documentoRecebedor')?.value?.trim() || '';
     const observacoes = document.getElementById('obsEntrega')?.value?.trim() || '';
     const statusFinal = document.getElementById('statusFinalEntrega')?.value || 'ENTREGA_REALIZADA';
-    const assinatura = state.sigTemAssinatura ? state.sigCanvas.toDataURL('image/png') : null;
     const itensRessalva = Array.from(document.querySelectorAll('[data-ressalva-item]:checked')).map((el) => {
         const [codigo, descricao] = String(el.value || '').split('||');
         return { codigo: codigo || '', descricao: descricao || '' };
@@ -917,7 +914,6 @@ async function confirmarEntrega() {
             foto_produtos: state.fotosFiles[0] || undefined,
             fotos_entrega: state.fotosFiles,
             fotos_ressalva: state.fotosRessalvaFiles,
-            foto_nota_assinada: assinatura ? dataUrlToFile(assinatura, 'nota-assinada.png') : undefined,
         };
 
     try {
@@ -954,10 +950,42 @@ function initCheckinSatisfacao() {
             document.querySelectorAll('#checkinOverlay [data-gostou]').forEach((el) => {
                 el.classList.toggle('is-active', el === btn);
             });
+            atualizarDisponibilidadePular();
+        });
+    });
+    const estrelas = document.querySelectorAll('#checkinOverlay [data-nota]');
+    estrelas.forEach((estrela) => {
+        estrela.addEventListener('click', () => {
+            state.checkinNota = Number(estrela.dataset.nota);
+            atualizarEstrelasCheckin(state.checkinNota);
+        });
+        estrela.addEventListener('mouseenter', () => {
+            atualizarEstrelasCheckin(Number(estrela.dataset.nota), true);
+        });
+        estrela.addEventListener('mouseleave', () => {
+            atualizarEstrelasCheckin(state.checkinNota);
         });
     });
     document.getElementById('checkinEnviar')?.addEventListener('click', enviarCheckinSatisfacao);
     document.getElementById('checkinPular')?.addEventListener('click', fecharCheckinSatisfacao);
+}
+
+function atualizarEstrelasCheckin(valor, preview = false) {
+    document.querySelectorAll('#checkinOverlay [data-nota]').forEach((estrela) => {
+        const nota = Number(estrela.dataset.nota);
+        const selecionada = Number.isInteger(valor) && nota <= valor;
+        estrela.classList.toggle('is-active', !preview && selecionada);
+        estrela.classList.toggle('is-preview', preview && selecionada);
+        estrela.setAttribute('aria-checked', !preview && nota === valor ? 'true' : 'false');
+    });
+}
+
+function atualizarDisponibilidadePular() {
+    const botao = document.getElementById('checkinPular');
+    if (!botao) return;
+    const disponivel = state.checkinGostou === false;
+    botao.classList.toggle('is-available', disponivel);
+    botao.disabled = !disponivel;
 }
 
 function abrirCheckinSatisfacao(entrega) {
@@ -969,12 +997,21 @@ function abrirCheckinSatisfacao(entrega) {
         }
         state.checkinEntrega = entrega;
         state.checkinGostou = null;
+        state.checkinNota = null;
         state.checkinResolve = resolve;
+        limparAssinatura();
         const clienteEl = document.getElementById('checkinCliente');
         const comentarioEl = document.getElementById('checkinComentario');
         if (clienteEl) clienteEl.textContent = entrega?.cliente_nome || 'Cliente';
         if (comentarioEl) comentarioEl.value = '';
+        const canvas = state.sigCanvas;
+        if (canvas) {
+            canvas.width = canvas.offsetWidth || 300;
+            canvas.height = 160;
+        }
         document.querySelectorAll('#checkinOverlay [data-gostou]').forEach((el) => el.classList.remove('is-active'));
+        atualizarEstrelasCheckin(null);
+        atualizarDisponibilidadePular();
         overlay.style.display = 'flex';
     });
 }
@@ -986,6 +1023,9 @@ function fecharCheckinSatisfacao() {
     state.checkinResolve = null;
     state.checkinEntrega = null;
     state.checkinGostou = null;
+    state.checkinNota = null;
+    atualizarEstrelasCheckin(null);
+    atualizarDisponibilidadePular();
     if (typeof resolve === 'function') resolve();
 }
 
@@ -993,6 +1033,14 @@ async function enviarCheckinSatisfacao() {
     const entrega = state.checkinEntrega;
     if (state.checkinGostou === null || state.checkinGostou === undefined) {
         showToast('Informe se o cliente gostou da entrega.', 'error');
+        return;
+    }
+    if (state.checkinGostou && !Number.isInteger(state.checkinNota)) {
+        showToast('Selecione uma nota de 1 a 5 estrelas.', 'error');
+        return;
+    }
+    if (!state.sigTemAssinatura) {
+        showToast('Colete a assinatura do recebedor para registrar a satisfação.', 'error');
         return;
     }
     const comentario = document.getElementById('checkinComentario')?.value?.trim() || '';
@@ -1005,6 +1053,8 @@ async function enviarCheckinSatisfacao() {
                 nota: state.checkinGostou ? 10 : 4,
                 comentario,
                 cliente_gostou: state.checkinGostou,
+                nota_satisfacao: state.checkinNota,
+                assinatura_base64: state.sigCanvas.toDataURL('image/png'),
             });
         } catch (err) {
             showToast(err?.message || 'Não foi possível gravar a satisfação.', 'error');
@@ -1128,12 +1178,12 @@ function getStatusKey(e) {
 
 function getStatusInfo(key) {
     const map = {
-        pendente:   { label: 'Pendente',    emoji: '⏳' },
-        'em-rota':  { label: 'Em Rota',     emoji: '🚀' },
-        entregue:   { label: 'Entregue',    emoji: '✅' },
-        ocorrencia: { label: 'Ocorrência',  emoji: '⚠️' },
+        pendente:   { label: 'Pendente',    icon: 'info' },
+        'em-rota':  { label: 'Em Rota',     icon: 'send' },
+        entregue:   { label: 'Entregue',    icon: 'check' },
+        ocorrencia: { label: 'Ocorrência',  icon: 'alert' },
     };
-    return map[key] || { label: key, emoji: '📦' };
+    return map[key] || { label: key, icon: 'package' };
 }
 
 function isEntregue(e)  { return getStatusKey(e) === 'entregue'; }

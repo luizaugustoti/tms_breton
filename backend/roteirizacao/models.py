@@ -108,6 +108,9 @@ class ParadaRota(models.Model):
         verbose_name = "Parada da Rota"
         verbose_name_plural = "Paradas da Rota"
         ordering = ['rota', 'sequencia']
+        indexes = [
+            models.Index(fields=['status', 'finalizado']),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=['rota', 'pedido'],

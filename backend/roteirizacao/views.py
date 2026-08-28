@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Max, Q
+from datetime import timedelta
 import base64
 import json
 import hashlib
@@ -14,7 +15,7 @@ from cadastros.models import Veiculo
 from pedidos.serializers import PedidoSerializer
 from core.permissions import MOTORISTA_PORTAL_ROLES, user_has_role
 from .models import Rota, ParadaRota
-from .serializers import RotaSerializer, ParadaRotaSerializer
+from .serializers import RotaSerializer, ParadaRotaSerializer, ParadaRotaMotoristaSerializer
 
 
 def _get_roteirizacao_ativa_para_veiculo(veiculo):
@@ -302,8 +303,15 @@ def motorista_entregas(request):
     else:
         rotas = Rota.objects.exclude(status='CANCELADA').exclude(veiculo__isnull=True).order_by('data_rota', 'id')
 
-    paradas = ParadaRota.objects.filter(rota__in=rotas).select_related('rota', 'pedido').order_by('rota__data_rota', 'rota__id', 'sequencia')
-    serializer = ParadaRotaSerializer(paradas, many=True)
+    limite_concluidas = timezone.now() - timedelta(days=2)
+    paradas = (
+        ParadaRota.objects.filter(rota__in=rotas)
+        .filter(Q(status__in=['PENDENTE', 'SAIDA', 'CHEGADA', 'INICIO']) | Q(finalizado__isnull=True) | Q(finalizado__gte=limite_concluidas))
+        .select_related('rota', 'pedido')
+        .prefetch_related('pedido__itens')
+        .order_by('rota__data_rota', 'rota__id', 'sequencia')
+    )
+    serializer = ParadaRotaMotoristaSerializer(paradas, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 

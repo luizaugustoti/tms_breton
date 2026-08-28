@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Rota, ParadaRota
+from pedidos.models import Pedido, ItemPedido
 from pedidos.serializers import PedidoSerializer
 from cadastros.models import Funcionario
 
@@ -14,9 +15,26 @@ def _nome_usuario(user):
     return nome or getattr(user, 'username', '') or ''
 
 
+class ItemPedidoMotoristaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ItemPedido
+        fields = ['codigo', 'etiqueta', 'descricao']
+
+
+class PedidoMotoristaSerializer(serializers.ModelSerializer):
+    itens = ItemPedidoMotoristaSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Pedido
+        fields = [
+            'id', 'numero_nota', 'cliente', 'endereco', 'bairro', 'cidade',
+            'uf', 'cep', 'periodo', 'volume_total', 'observacao', 'status',
+            'itens',
+        ]
+
+
 class ParadaRotaSerializer(serializers.ModelSerializer):
     pedido = PedidoSerializer(read_only=True)
-    pedido_id = serializers.IntegerField(source='pedido.id', read_only=True)
 
     class Meta:
         model = ParadaRota
@@ -27,6 +45,20 @@ class ParadaRotaSerializer(serializers.ModelSerializer):
             'observacoes_entrega', 'foto_chegada', 'foto_produtos', 'foto_nota_assinada'
         ]
         read_only_fields = ['foto_chegada', 'foto_produtos', 'foto_nota_assinada']
+
+
+class ParadaRotaMotoristaSerializer(serializers.ModelSerializer):
+    pedido = PedidoMotoristaSerializer(read_only=True)
+    pedido_id = serializers.IntegerField(source='pedido.id', read_only=True)
+
+    class Meta:
+        model = ParadaRota
+        fields = [
+            'id', 'rota', 'pedido', 'pedido_id', 'sequencia', 'status',
+            'saida_entrega', 'chegada_cliente', 'inicio_descarregamento',
+            'finalizado', 'recebedor', 'documento_recebedor',
+            'observacoes_entrega',
+        ]
 
 
 class RotaSerializer(serializers.ModelSerializer):

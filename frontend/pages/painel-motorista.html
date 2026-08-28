@@ -471,8 +471,11 @@
         .foto-upload-area {
             border: 2px dashed var(--border);
             border-radius: 10px;
-            padding: 16px;
-            text-align: center;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
             background: #faf6f1;
             margin-bottom: 14px;
             cursor: pointer;
@@ -480,8 +483,18 @@
         }
         .foto-upload-area:hover { border-color: var(--dourado); }
         .foto-upload-area input { display: none; }
-        .foto-upload-area__icon { font-size: 1.6rem; }
-        .foto-upload-area p { font-size: .78rem; color: var(--muted); margin-top: 4px; }
+        .foto-upload-area__icon {
+            width: 1.65rem;
+            height: 1.65rem;
+            color: var(--vinho);
+            flex: 0 0 auto;
+        }
+        .foto-upload-area p {
+            font-size: .78rem;
+            color: var(--muted);
+            line-height: 1.35;
+            text-align: left;
+        }
         .foto-preview-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
@@ -661,14 +674,50 @@
             width: 100%; min-height: 72px; border: 1px solid #ddd; border-radius: 10px;
             padding: 10px 12px; font-family: inherit; font-size: .8rem; resize: none; margin-bottom: 12px;
         }
+        .checkin-nota {
+            margin: 0 0 12px;
+            text-align: center;
+        }
+        .checkin-nota__label {
+            margin: 0 0 6px !important;
+            color: #555 !important;
+            font-size: .75rem !important;
+            font-weight: 700;
+        }
+        .checkin-nota__stars {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+        }
+        .checkin-nota__star {
+            border: 0;
+            background: transparent;
+            color: #c9c9c9;
+            cursor: pointer;
+            font-size: 1.65rem;
+            line-height: 1;
+            padding: 2px;
+            transition: color .15s, transform .15s;
+        }
+        .checkin-nota__star:hover,
+        .checkin-nota__star:focus-visible {
+            transform: scale(1.12);
+            outline: none;
+        }
+        .checkin-nota__star.is-preview,
+        .checkin-nota__star.is-active {
+            color: var(--dourado);
+        }
         .checkin-enviar {
             width: 100%; border: 0; border-radius: 10px; padding: 13px;
             background: var(--vinho); color: #fff; font-weight: 700; font-family: inherit; cursor: pointer;
         }
         .checkin-pular {
+            display: none;
             width: 100%; margin-top: 8px; border: 0; background: none; color: #888;
             font-family: inherit; font-size: .75rem; cursor: pointer;
         }
+        .checkin-pular.is-available { display: block; }
 
         /* ══════════════════════════════════════════
            BOTTOM NAV
@@ -718,6 +767,7 @@
             .comprovante-sheet { padding: 14px 12px 20px; }
             .sig-actions { flex-direction: column; }
             .comp-confirm-btn { padding: 12px; font-size: .82rem; }
+            .foto-upload-area { justify-content: flex-start; }
         }
     </style>
 </head>
@@ -726,12 +776,12 @@
 <!-- ═══ Top Bar ═══ -->
 <header class="top-bar">
     <div class="top-bar__brand">
-        <span class="top-bar__title">🚚 Portal do Motorista</span>
+        <span class="top-bar__title"><span data-icon="truck" aria-hidden="true"></span> Portal do Motorista</span>
         <span class="top-bar__subtitle">TMS Breton Operations</span>
     </div>
     <div class="top-bar__actions">
         <a class="top-bar__btn" href="pedidos.html" title="Voltar ao operacional" style="text-decoration:none;display:flex;align-items:center;">←</a>
-        <button class="top-bar__btn" id="btnRefresh">🔄</button>
+        <button class="top-bar__btn" id="btnRefresh" aria-label="Atualizar"><span data-icon="refresh" aria-hidden="true"></span></button>
         <div class="top-bar__avatar" id="topAvatar" title="Perfil">—</div>
     </div>
 </header>
@@ -766,15 +816,15 @@
     <!-- ═══ Filtro de Status ═══ -->
     <div class="filter-bar" id="filterBar">
         <button class="filter-pill filter-pill--active" data-filter="todos">Todas</button>
-        <button class="filter-pill" data-filter="pendente">⏳ Pendentes</button>
-        <button class="filter-pill" data-filter="em-rota">🚀 Em Rota</button>
-        <button class="filter-pill" data-filter="entregue">✅ Entregues</button>
-        <button class="filter-pill" data-filter="ocorrencia">⚠️ Ocorrências</button>
+        <button class="filter-pill" data-filter="pendente">Pendentes</button>
+        <button class="filter-pill" data-filter="em-rota">Em Rota</button>
+        <button class="filter-pill" data-filter="entregue">Entregues</button>
+        <button class="filter-pill" data-filter="ocorrencia">Ocorrências</button>
     </div>
 
     <!-- ═══ Lista de Entregas ═══ -->
     <div class="section-header">
-        <h2 id="sectionTitle">📋 Entregas de Hoje</h2>
+        <h2 id="sectionTitle"><span data-icon="package" aria-hidden="true"></span><span id="sectionTitleText">Entregas de Hoje</span></h2>
         <span id="sectionCount">—</span>
     </div>
 
@@ -790,25 +840,14 @@
 <div class="comprovante-overlay" id="comprovanteOverlay" style="display:none;">
     <div class="comprovante-sheet" id="comprovanteSheet">
         <div class="comp-drag-handle"></div>
-        <h3>✅ Registrar Entrega</h3>
+        <h3><span id="comprovanteTituloIcon" data-icon="check" aria-hidden="true"></span> <span id="comprovanteTituloText">Registrar Entrega</span></h3>
         <p style="font-size:.78rem;color:#888;text-align:center;margin-bottom:14px" id="compPedidoInfo">Pedido —</p>
-
-        <!-- Assinatura Digital -->
-        <p id="lblAssinatura" style="font-size:.78rem;font-weight:700;color:#555;margin-bottom:6px">✍️ Assinatura do Recebedor</p>
-        <div class="sig-canvas-wrap" id="sigWrap">
-            <canvas id="sigCanvas"></canvas>
-            <div class="sig-placeholder" id="sigPlaceholder">Assinar aqui com o dedo</div>
-        </div>
-        <div class="sig-actions">
-            <button id="btnLimparSig">🗑️ Limpar</button>
-            <button id="btnCapturarSig" style="background:#f5ede6;color:var(--vinho);border-color:var(--dourado);">📷 Usar Foto</button>
-        </div>
 
         <!-- Foto do produto entregue -->
         <label class="foto-upload-area" id="fotoUploadArea">
             <input type="file" id="fotoInput" accept="image/*" multiple>
-            <span class="foto-upload-area__icon">📷</span>
-            <p>Adicionar fotos da entrega (câmera ou galeria)</p>
+            <span class="foto-upload-area__icon" data-icon="camera" aria-hidden="true"></span>
+            <p id="fotoUploadLabel">Adicionar fotos da entrega (câmera ou galeria)</p>
         </label>
         <div id="fotoPreviewGrid" class="foto-preview-grid" style="display:none;"></div>
         <p id="fotoPreviewEmpty" class="foto-preview-empty">Nenhuma foto selecionada.</p>
@@ -842,7 +881,7 @@
             <div id="ressalvaFotosWrap" class="ressalva-fotos-wrap">
                 <label class="foto-upload-area" id="fotoRessalvaUploadArea" style="margin-bottom:8px;">
                     <input type="file" id="fotoRessalvaInput" accept="image/*" multiple>
-                    <span class="foto-upload-area__icon">📸</span>
+                    <span class="foto-upload-area__icon" data-icon="camera" aria-hidden="true"></span>
                     <p>Adicionar fotos dos produtos com ressalva</p>
                 </label>
                 <div id="fotoRessalvaPreviewGrid" class="foto-preview-grid" style="display:none;"></div>
@@ -864,8 +903,29 @@
             <button type="button" data-gostou="0">👎 Não gostou</button>
         </div>
         <textarea id="checkinComentario" placeholder="Comentário do cliente (opcional)"></textarea>
+        <div class="checkin-nota" id="checkinNota">
+            <p class="checkin-nota__label">Avaliação da entrega</p>
+            <div class="checkin-nota__stars" role="radiogroup" aria-label="Avaliação de 1 a 5 estrelas">
+                <button type="button" class="checkin-nota__star" data-nota="1" role="radio" aria-label="1 estrela" aria-checked="false">★</button>
+                <button type="button" class="checkin-nota__star" data-nota="2" role="radio" aria-label="2 estrelas" aria-checked="false">★</button>
+                <button type="button" class="checkin-nota__star" data-nota="3" role="radio" aria-label="3 estrelas" aria-checked="false">★</button>
+                <button type="button" class="checkin-nota__star" data-nota="4" role="radio" aria-label="4 estrelas" aria-checked="false">★</button>
+                <button type="button" class="checkin-nota__star" data-nota="5" role="radio" aria-label="5 estrelas" aria-checked="false">★</button>
+            </div>
+        </div>
+        <div class="checkin-signature">
+            <p class="checkin-signature__label"><span data-icon="pencil" aria-hidden="true"></span> Assinatura do Recebedor</p>
+            <div class="sig-canvas-wrap" id="sigWrap">
+                <canvas id="sigCanvas"></canvas>
+                <div class="sig-placeholder" id="sigPlaceholder">Assinar aqui com o dedo</div>
+            </div>
+            <div class="sig-actions">
+                <button id="btnLimparSig"><span data-icon="trash" aria-hidden="true"></span> Limpar</button>
+                <button id="btnCapturarSig" style="background:#f5ede6;color:var(--vinho);border-color:var(--dourado);"><span data-icon="camera" aria-hidden="true"></span> Usar Foto</button>
+            </div>
+        </div>
         <button type="button" class="checkin-enviar" id="checkinEnviar">Registrar satisfação</button>
-        <button type="button" class="checkin-pular" id="checkinPular">Pular este check-in</button>
+        <button type="button" class="checkin-pular" id="checkinPular" disabled>Pular este check-in</button>
     </div>
 </div>
 
@@ -885,6 +945,6 @@
     </button>
 </nav>
 
-<script type="module" src="../js/modules/painel-motorista.js?v=9"></script>
+<script type="module" src="../js/modules/painel-motorista.js?v=11"></script>
 </body>
 </html>
