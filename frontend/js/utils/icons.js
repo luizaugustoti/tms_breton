@@ -104,7 +104,7 @@ function replaceEmojiInTextNode(node) {
             frag.appendChild(document.createTextNode(' '));
             return;
         }
-        if (part) frag.appendChild(document.createTextNode(part.replace(/^\s+/, part === parts[0] ? '' : part)));
+        if (part) frag.appendChild(document.createTextNode(part.replace(/^\s+/, '')));
     });
     node.parentNode.replaceChild(frag, node);
 }

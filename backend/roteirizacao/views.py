@@ -96,6 +96,7 @@ def _sincronizar_paradas_da_rota(rota, pedido_ids):
                     parada.save(update_fields=['sequencia'])
                 continue
 
+            ParadaRota.objects.filter(pedido_id=pedido_id).exclude(rota=rota).delete()
             ParadaRota.objects.create(
                 rota=rota,
                 pedido_id=pedido_id,
@@ -393,14 +394,10 @@ class RotaViewSet(viewsets.ModelViewSet):
         for p_id in pedido_ids:
             try:
                 pedido = Pedido.objects.get(pk=p_id)
-                # Evita duplicidade do mesmo pedido na mesma rota
+                # A parada deve existir em apenas uma rota, nunca também no backlog.
                 if not ParadaRota.objects.filter(rota=rota, pedido=pedido).exists():
+                    _sincronizar_parada_do_pedido(pedido, rota.veiculo)
                     ultima_sequencia += 1
-                    ParadaRota.objects.create(
-                        rota=rota, 
-                        pedido=pedido, 
-                        sequencia=ultima_sequencia
-                    )
                     adicionados += 1
                 atualizar = []
                 if motorista and pedido.motorista_id != motorista.id:
